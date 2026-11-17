@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Documentation Mirage WASM français : exemples, limites et confidentialité</title>
+  <meta name="description"
+    content="Documentation de la démonstration Mirage WASM en français : déroulement d’une analyse, comparaison des modes navigateur et serveur, trois exemples de référence, limites observées et politique de confidentialité." />
+  <link rel="canonical" href="https://adam-s-tech.github.io/mirage-demo/documentation.html" />
+  <meta name="robots" content="index, follow" />
+  <meta name="theme-color" content="#0b0e14" />
+
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="Mirage WASM français" />
+  <meta property="og:locale" content="fr_FR" />
+  <meta property="og:title" content="Documentation Mirage WASM français : exemples, limites et confidentialité" />
+  <meta property="og:description"
+    content="Comment fonctionne la démonstration, ce que les trois tests montrent réellement, et pourquoi l’image reste dans le navigateur." />
+  <meta property="og:url" content="https://adam-s-tech.github.io/mirage-demo/documentation.html" />
+  <meta property="og:image" content="https://adam-s-tech.github.io/mirage-demo/og-image.png" />
+  <meta property="og:image:width" content="1280" />
+  <meta property="og:image:height" content="640" />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Documentation Mirage WASM français : exemples, limites et confidentialité" />
+  <meta name="twitter:description"
+    content="Déroulement d’une analyse, exemples de référence et limites observées avec Mirage WASM en français." />
+  <meta name="twitter:image" content="https://adam-s-tech.github.io/mirage-demo/og-image.png" />
+
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="./favicon-32.png" sizes="32x32" type="image/png" />
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="stylesheet" href="./styles.css" />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "Documentation Mirage WASM français",
+    "url": "https://adam-s-tech.github.io/mirage-demo/documentation.html",
+    "inLanguage": "fr",
+    "isPartOf": {
+      "@type": "WebSite",
+      "name": "Mirage WASM français",
+      "url": "https://adam-s-tech.github.io/mirage-demo/"
+    },
+    "description": "Documentation de la démonstration française de Mirage WASM : fonctionnement, exemples de référence, limites et confidentialité."
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Démonstration",
+        "item": "https://adam-s-tech.github.io/mirage-demo/"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Documentation",
+        "item": "https://adam-s-tech.github.io/mirage-demo/documentation.html"
+      }
+    ]
+  }
+  </script>
+</head>
+
+<body>
+  <a class="skip-link" href="#contenu">Aller au contenu principal</a>
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <p class="brand-title">
+        <span class="brand-name">Mirage <span class="accent">wasm</span></span>
+        <span class="brand-tagline">OCR et vision locale dans le navigateur</span>
+      </p>
+    </div>
+    <nav class="topnav" aria-label="Navigation principale">
+      <a href="./">Démonstration</a>
+      <a href="./documentation.html" aria-current="page">Documentation</a>
+    </nav>
+  </header>
+
+  <main class="editorial" id="contenu">
+    <h1>Documentation de la démonstration Mirage WASM</h1>
+    <p class="lead">Cette page explique ce que fait la démonstration, comment lire ses résultats, ce que les trois tests
+      de référence montrent réellement, et pourquoi l’image analysée ne quitte pas le navigateur.</p>
+
+    <section aria-labelledby="titre-fonctionnement">
+      <h2 id="titre-fonctionnement">Comment se déroule une analyse</h2>
+      <ol class="steps">
+        <li><strong>Import.</strong> Vous déposez une image JPG, PNG ou WebP, ou vous la sélectionnez avec le bouton
+          « Parcourir les fichiers ». Le fichier reste en mémoire dans l’onglet.</li>
+        <li><strong>Chargement du moteur.</strong> Au premier lancement, le navigateur télécharge le moteur
+          <code>cactus.wasm</code> puis les poids du modèle <code>mirage.cact</code> (environ 22 Mo), mis en cache
+          ensuite.</li>
+        <li><strong>Inférence locale.</strong> L’image est redimensionnée à 1024 pixels sur le grand côté, convertie en
+          pixels RGB et transmise à <code>cactus_describe()</code> dans le moteur WebAssembly.</li>
+        <li><strong>Lecture des résultats.</strong> Les boîtes, masques, étiquettes et zones de texte sont dessinés sur
+          l’image. Les panneaux listent la scène, les objets, les textes détectés et les relations.</li>
+        <li><strong>Export.</strong> Le JSON brut reste affiché tel quel. La copie reprend ce JSON sans modification ; le
+          téléchargement ajoute un bloc de métadonnées séparé.</li>
+      </ol>
+    </section>
+
+    <section aria-labelledby="titre-modes">
+      <h2 id="titre-modes">Deux modes d’exécution</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Mode</th>
+              <th scope="col">Où tourne l’inférence</th>
+              <th scope="col">Prérequis</th>
+              <th scope="col">Usage conseillé</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">WebAssembly (principal)</th>
+              <td>Dans l’onglet, via <code>cactus.wasm</code></td>
+              <td>Un navigateur récent, environ 22 Mo de téléchargement au premier lancement</td>
+              <td>Démonstration, formation, test de documents sensibles</td>
+            </tr>
+            <tr>
+              <th scope="row">Serveur local</th>
+              <td>Sur votre machine, via <code>cactus mirage describe</code></td>
+              <td>Bun et la CLI Cactus installée</td>
+              <td>Comparaison, automatisation en ligne de commande</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Les commandes exactes sont décrites dans <a
+          href="https://github.com/Adam-s-tech/mirage-demo/blob/main/docs/installation.md">le guide d’installation</a>.
+      </p>
+    </section>
+
+    <section aria-labelledby="titre-exemples">
+      <h2 id="titre-exemples">Trois expériences de référence</h2>
+      <p>Les trois images ci-dessous ont été analysées avec cette version, et leurs sorties JSON sont conservées dans le
+        dépôt, dans le dossier <code>exemples/resultats/</code>. Chaque page de test décrit l’objectif, les résultats
+        observés et les limites constatées.</p>
+      <ul class="cards3">
+        <li>
+          <a href="https://github.com/Adam-s-tech/mirage-demo/blob/main/docs/tests/01-cafe.md">
+            <img src="./exemples/images/01-deux-cafes-latte-art.png" width="1100" height="693" loading="lazy"
+              decoding="async" alt="Deux tasses de café vues de dessus sur une table en bois, avec un cœur dessiné dans la mousse." />
+            <span class="card-title">01 · Deux cafés</span>
+          </a>
+          <p>Détection d’objets et segmentation dans une scène photographique simple : deux tasses, la mousse, la table
+            et une cuillère.</p>
+        </li>
+        <li>
+          <a href="https://github.com/Adam-s-tech/mirage-demo/blob/main/docs/tests/02-marketing-ai-market-map.md">
+            <img src="./exemples/images/02-marketing-ai-market-map.png" width="774" height="606" loading="lazy"
+              decoding="async" alt="Capture d’écran d’une carte marketing des outils d’intelligence artificielle, organisée en lignes et colonnes de logos." />
+            <span class="card-title">02 · Marketing x AI Market Map</span>
+          </a>
+          <p>OCR et localisation de nombreux petits textes : catégories, marques et structure de fenêtre.</p>
+        </li>
+        <li>
+          <a href="https://github.com/Adam-s-tech/mirage-demo/blob/main/docs/tests/03-schema-power-bi.md">
+            <img src="./exemples/images/03-schema-power-bi.png" width="1819" height="1055" loading="lazy"
+              decoding="async" alt="Schéma pédagogique Power BI en français avec cinq étapes numérotées, des flèches et des icônes." />
+            <span class="card-title">03 · Schéma Power BI</span>
+          </a>
+          <p>Lecture d’un support pédagogique français : étapes, zones de texte, flèche et icône de smartphone.</p>
+        </li>
+      </ul>
+    </section>
+
+    <section aria-labelledby="titre-confidentialite">
+      <h2 id="titre-confidentialite">Confidentialité et requêtes réseau</h2>
+      <p>En mode WebAssembly, l’image ne quitte jamais le navigateur : elle est chargée depuis un objet local
+        (<code>blob:</code>), dessinée dans un canevas, puis traitée par le moteur inclus dans la page. Aucun outil de
+        mesure d’audience, aucun compte et aucun stockage distant ne sont utilisés.</p>
+      <p>La page publiée sur GitHub Pages télécharge les poids du modèle depuis Hugging Face lors du premier usage. Cette
+        requête ne transporte aucune image et ne récupère que le fichier <code>mirage.cact</code>. En local, le petit
+        serveur <code>wasm-app/serve.ts</code> télécharge ce même fichier une fois et le sert depuis
+        <code>wasm-app/models/</code>.</p>
+      <p>Pour vérifier ce comportement : ouvrez l’onglet « Réseau » des outils de développement, lancez une analyse, puis
+        constatez qu’aucune requête ne transporte les pixels. La note complète est dans <a
+          href="https://github.com/Adam-s-tech/mirage-demo/blob/main/docs/confidentialite.md">docs/confidentialite.md</a>.
+      </p>
+    </section>
+
+    <section aria-labelledby="titre-limites">
+      <h2 id="titre-limites">Limites connues</h2>
+      <ul>
+        <li>La démonstration analyse des images, pas des PDF : il faut convertir une page en image avant l’analyse.</li>
+        <li>L’interprétation textuelle est produite par le modèle en anglais ; l’interface est en français, mais ce
+          paragraphe n’est pas traduit automatiquement.</li>
+        <li>Les scores de confiance varient d’une image à l’autre et ne constituent pas une garantie d’exactitude.</li>
+        <li>Les petits textes, les noms propres et les logos serrés sont les cas les plus fragiles en OCR.</li>
+        <li>Mirage ne remplace pas un OCR comptable spécialisé ni un grand modèle multimodal pour une extraction
+          contractuelle.</li>
+      </ul>
+      <p><a href="https://github.com/Adam-s-tech/mirage-demo/blob/main/docs/limites.md">Lire la liste détaillée des
+          limites</a>.</p>
+    </section>
+
+    <section aria-labelledby="titre-doc-technique">
+      <h2 id="titre-doc-technique">Documentation technique</h2>
+      <ul class="linklist">
+        <li><a href="https://github.com/Adam-s-tech/mirage-demo/blob/main/docs/installation.md">Installation et lancement
+            local</a></li>
+        <li><a href="https://github.com/Adam-s-tech/mirage-demo/blob/main/docs/fonctionnement.md">Fonctionnement
+            technique et format des sorties JSON</a></li>
+        <li><a href="https://github.com/Adam-s-tech/mirage-demo/blob/main/docs/confidentialite.md">Confidentialité et
+            requêtes réseau</a></li>
+        <li><a href="https://github.com/Adam-s-tech/mirage-demo/blob/main/docs/cas-usage.md">Cas d’usage
+            professionnels</a></li>
+        <li><a href="https://github.com/Adam-s-tech/mirage-demo/blob/main/docs/tests/README.md">Protocole des trois
+            tests</a></li>
+        <li><a href="https://github.com/Adam-s-tech/mirage-demo/blob/main/docs/architecture-cible.md">Architecture
+            cible : PDF, factures, n8n</a></li>
+        <li><a href="https://github.com/Adam-s-tech/mirage-demo/blob/main/exemples/README.md">Images et résultats JSON de
+            référence</a></li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="page-foot">
+    <p><a href="./">Retour à la démonstration</a> · Mirage et Cactus sont développés par <a
+        href="https://github.com/Cactus-Compute">Cactus Compute</a>. Démonstration originale : <a
+        href="https://github.com/joemaddalone/mirage-demo">Joe Maddalone</a>. Version française, documentation et tests :
+      Adama BELEM, Adam AI / Next Gen AI.</p>
+    <p><a href="https://github.com/Adam-s-tech/mirage-demo/blob/main/NOTICE.md">Crédits et licences</a></p>
+  </footer>
+</body>
+
+</html>

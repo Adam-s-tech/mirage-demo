@@ -1,7 +1,12 @@
-// Mirage wasm — the same describe UI, but inference runs in this tab.
-// The cactus engine (cactus.js + cactus.wasm) and the mirage.cact weights are
-// fetched once, then every describe call is a straight WebAssembly function
-// call against the image pixels we already have in a canvas.
+// Mirage wasm : version française de la démonstration.
+// Même interface que la version serveur, mais l’inférence tourne dans cet onglet.
+// Le moteur Cactus (cactus.js + cactus.wasm) et les poids mirage.cact sont
+// récupérés une fois, puis chaque analyse est un appel WebAssembly direct sur
+// les pixels déjà présents dans un canevas. Aucune image n’est envoyée.
+
+const APP_VERSION = "1.0.0";
+const HF_MODEL_URL =
+  "https://huggingface.co/Cactus-Compute/mirage/resolve/main/mirage.cact";
 
 const drop = document.getElementById("drop");
 const fileInput = document.getElementById("file");
@@ -29,6 +34,9 @@ const scenePills = document.getElementById("scenePills");
 const textWrap = document.getElementById("textWrap");
 const textList = document.getElementById("textList");
 const textCount = document.getElementById("textCount");
+const relWrap = document.getElementById("relWrap");
+const relList = document.getElementById("relList");
+const relCount = document.getElementById("relCount");
 const inspectorEmpty = document.getElementById("inspectorEmpty");
 const confRow = document.getElementById("confRow");
 const confRange = document.getElementById("confRange");
@@ -39,21 +47,61 @@ const enginePct = document.getElementById("enginePct");
 const modelBar = document.getElementById("modelBar");
 const modelPct = document.getElementById("modelPct");
 const copyJsonBtn = document.getElementById("copyJson");
+const downloadJsonBtn = document.getElementById("downloadJson");
 const thumbWrap = document.getElementById("thumbWrap");
 const thumb = document.getElementById("thumb");
 const descWrap = document.getElementById("descWrap");
 const descBody = document.getElementById("descBody");
 const descLang = document.getElementById("descLang");
 
+const OK_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const OK_EXT = /\.(jpe?g|png|webp)$/i;
+
+// Libellés français des clés techniques. Les clés du JSON restent intactes.
+const SCENE_LABELS = {
+  setting: "cadre",
+  lighting: "éclairage",
+  weather: "météo",
+  time_of_day: "moment de la journée",
+  surface: "surface",
+  style: "style",
+  background: "fond",
+  colors: "couleurs",
+};
+
+// Prédicats renvoyés par le modèle, traduits pour la lecture humaine.
+const PREDICATES = {
+  in: "dans",
+  inside: "à l’intérieur de",
+  on: "sur",
+  under: "sous",
+  above: "au-dessus de",
+  below: "en dessous de",
+  next_to: "à côté de",
+  near: "près de",
+  left_of: "à gauche de",
+  right_of: "à droite de",
+  behind: "derrière",
+  in_front_of: "devant",
+  holding: "tient",
+  contains: "contient",
+  part_of: "partie de",
+  touching: "touche",
+  attached_to: "attaché à",
+  with: "avec",
+};
+
 let minScore = 0;
-// Items without a numeric score always pass so unscored data stays visible.
+// Les éléments sans score numérique passent toujours : rien n’est masqué à tort.
 function passesScore(item) {
   return !item || typeof item.score !== "number" || item.score >= minScore;
 }
+
 for (const [headId, wrapId] of [
   ["sceneHead", "sceneWrap"],
   ["objHead", "objListWrap"],
   ["textHead", "textWrap"],
+  ["relHead", "relWrap"],
 ]) {
   const head = document.getElementById(headId);
   const wrap = document.getElementById(wrapId);
@@ -64,8 +112,8 @@ for (const [headId, wrapId] of [
 }
 
 function renderDescription() {
-  // Pipe-separated reasoning string → one paragraph per segment.
-  // A leading "lang: xx" segment becomes the header pill instead of prose.
+  // Chaîne « reasoning » séparée par des barres verticales : un paragraphe par
+  // segment. Un premier segment « lang: xx » devient une pastille d’en-tête.
   const reasoning =
     lastResult && typeof lastResult.reasoning === "string"
       ? lastResult.reasoning
@@ -81,16 +129,29 @@ function renderDescription() {
   const lang = segments[0].match(/^lang:\s*(\w+)$/i);
   const prose = lang ? segments.slice(1) : segments;
   descLang.hidden = !lang;
-  if (lang) descLang.textContent = lang[1];
+  if (lang) {
+    descLang.textContent = /^en$/i.test(lang[1])
+      ? "modèle : anglais"
+      : `langue : ${lang[1]}`;
+    descLang.title = /^en$/i.test(lang[1])
+      ? "L’interprétation est rédigée par le modèle en anglais ; l’interface reste en français."
+      : "";
+  }
   descBody.innerHTML = "";
   prose.forEach((text, i) => {
     const p = document.createElement("p");
-    // Last segment is usually a caveat ("cannot know…") — mute it.
+    // Le dernier segment est souvent une réserve (« cannot know… ») : on l’atténue.
     if (i === prose.length - 1 && /^(cannot|can't|unable|unknown)/i.test(text))
       p.className = "dim";
     p.textContent = text;
     descBody.appendChild(p);
   });
+  if (lang && /^en$/i.test(lang[1])) {
+    const note = document.createElement("p");
+    note.className = "dim";
+    note.textContent = "Texte produit par le modèle en anglais, affiché sans traduction.";
+    descBody.appendChild(note);
+  }
   descWrap.hidden = !prose.length;
 }
 
@@ -98,22 +159,34 @@ const SCENE_KEYS = ["setting", "lighting", "weather", "time_of_day"];
 
 // ---------------------------------------------------------------- wasm engine
 
-// Relative so the app works from any base path (localhost, a subfolder,
-// or a GitHub Pages project site) with zero configuration.
+// Chemins relatifs pour fonctionner depuis n’importe quel sous-dossier.
 const ENGINE_JS = "./vendor/cactus.js";
 const ENGINE_WASM = "./vendor/cactus.wasm";
-const MODEL_URL = "./models/mirage.cact";
-// Mirage's output buffer; the server-side Python binding uses 16 MB too.
+// Buffers du modèle : la liaison Python côté serveur utilise aussi 16 Mo.
 const OUT_CAPACITY = 16 * 1024 * 1024;
-// Long edge handed to the model. Descriptions and boxes are resolution
-// independent (boxes are 0–1000), so downscaling only saves memory/time.
+// Grand côté envoyé au modèle. Boîtes et descriptions sont indépendantes de la
+// résolution (boîtes en 0 à 1000), donc réduire ne coûte que peu de précision.
 const MAX_EDGE = 1024;
 const CACTUS_VISION = 4;
+
+// Sur GitHub Pages il n’y a pas de serveur pour relayer les poids : la page
+// récupère le fichier officiel sur Hugging Face. En local, serve.ts le sert
+// depuis wasm-app/models/. Un paramètre ?model=… permet de forcer une URL.
+function modelUrls() {
+  const override = new URLSearchParams(location.search).get("model");
+  if (override) return [override];
+  const isStaticHost =
+    location.hostname.endsWith("github.io") ||
+    location.protocol === "file:";
+  return isStaticHost
+    ? [HF_MODEL_URL]
+    : ["./models/mirage.cact", HF_MODEL_URL];
+}
 
 const engine = {
   Module: null,
   ready: false,
-  loading: null, // Promise, so concurrent clicks share one download
+  loading: null, // promesse partagée : deux clics ne lancent qu’un téléchargement
 };
 
 function setPill(el, text, kind) {
@@ -128,30 +201,29 @@ function loadScriptOnce(src) {
     if (existing) {
       existing.addEventListener("load", () => resolve());
       existing.addEventListener("error", () =>
-        reject(new Error(`could not load ${src}`)),
+        reject(new Error(`impossible de charger ${src}`)),
       );
       return;
     }
-    // index.html already includes /vendor/cactus.js; this is the safety net
-    // for a page that was edited without it.
+    // index.html charge déjà ./vendor/cactus.js ; ceci est un filet de sécurité.
     const s = document.createElement("script");
     s.src = src;
     s.dataset.engine = src;
     s.onload = () => resolve();
-    s.onerror = () => reject(new Error(`could not load ${src}`));
+    s.onerror = () => reject(new Error(`impossible de charger ${src}`));
     document.head.appendChild(s);
   });
 }
 
-// Byte-progress fetch: returns the whole body plus a live fraction.
+// Téléchargement avec progression : renvoie les octets et met à jour la barre.
 async function fetchWithProgress(url, bar, pct, label) {
   const res = await fetch(url);
-  if (!res.ok) throw new Error(`${label}: HTTP ${res.status}`);
+  if (!res.ok) throw new Error(`${label} : HTTP ${res.status}`);
   const total = Number(res.headers.get("content-length")) || 0;
   if (!res.body) {
     const buf = new Uint8Array(await res.arrayBuffer());
     bar.style.width = "100%";
-    pct.textContent = `${(buf.length / 1048576).toFixed(1)} MB`;
+    pct.textContent = `${(buf.length / 1048576).toFixed(1)} Mo`;
     return buf;
   }
   const reader = res.body.getReader();
@@ -165,9 +237,9 @@ async function fetchWithProgress(url, bar, pct, label) {
     if (total) {
       const f = received / total;
       bar.style.width = `${(f * 100).toFixed(1)}%`;
-      pct.textContent = `${Math.round(f * 100)}%`;
+      pct.textContent = `${Math.round(f * 100)} %`;
     } else {
-      pct.textContent = `${(received / 1048576).toFixed(1)} MB`;
+      pct.textContent = `${(received / 1048576).toFixed(1)} Mo`;
     }
   }
   const bytes = new Uint8Array(received);
@@ -177,8 +249,20 @@ async function fetchWithProgress(url, bar, pct, label) {
     at += c.length;
   }
   bar.style.width = "100%";
-  pct.textContent = `${(received / 1048576).toFixed(1)} MB`;
+  pct.textContent = `${(received / 1048576).toFixed(1)} Mo`;
   return bytes;
+}
+
+async function fetchModel() {
+  let lastError = null;
+  for (const url of modelUrls()) {
+    try {
+      return await fetchWithProgress(url, modelBar, modelPct, "mirage.cact");
+    } catch (err) {
+      lastError = err;
+    }
+  }
+  throw lastError || new Error("téléchargement du modèle impossible");
 }
 
 function writeCString(Module, str) {
@@ -194,11 +278,11 @@ async function ensureEngine() {
   if (engine.loading) return engine.loading;
 
   engine.loading = (async () => {
-    setPill(enginePill, "loading", "busy");
+    setPill(enginePill, "chargement", "busy");
     await loadScriptOnce(ENGINE_JS);
 
-    // Hand the .wasm bytes in ourselves so progress is visible and the file
-    // is fetched exactly once (the loader would otherwise fetch it again).
+    // Les octets du .wasm sont passés à la main : progression visible et
+    // fichier téléchargé une seule fois.
     const wasmBytes = await fetchWithProgress(
       ENGINE_WASM,
       engineBar,
@@ -208,40 +292,35 @@ async function ensureEngine() {
     const Module = await window.createCactus({ wasmBinary: wasmBytes });
     engine.Module = Module;
 
-    const weights = await fetchWithProgress(
-      MODEL_URL,
-      modelBar,
-      modelPct,
-      "mirage.cact",
-    );
+    const weights = await fetchModel();
     const ptr = Module._malloc(weights.length);
-    if (!ptr) throw new Error("out of memory allocating the model archive");
+    if (!ptr) throw new Error("mémoire insuffisante pour le modèle");
     Module.HEAPU8.set(weights, ptr);
     const code = Module._cactus_load(ptr, BigInt(weights.length));
     Module._free(ptr);
     if (code < 0) {
       const msg = Module.UTF8ToString(Module._cactus_last_error());
-      throw new Error(msg || "cactus_load failed");
+      throw new Error(msg || "échec de cactus_load");
     }
     if (!(Module._cactus_models() & CACTUS_VISION)) {
-      throw new Error("the loaded archive is not a Mirage vision model");
+      throw new Error("l’archive chargée n’est pas un modèle de vision Mirage");
     }
     engine.ready = true;
-    setPill(enginePill, "ready", "ok");
+    setPill(enginePill, "prêt", "ok");
     return Module;
   })();
 
   try {
     return await engine.loading;
   } catch (err) {
-    setPill(enginePill, "failed", "err");
+    setPill(enginePill, "échec", "err");
     throw err;
   } finally {
     engine.loading = null;
   }
 }
 
-// Draw the image down to MAX_EDGE, then hand the model packed RGB (no alpha).
+// Réduit l’image à MAX_EDGE puis fournit au modèle des pixels RGB (sans alpha).
 function imageToRGB(img) {
   const scale = Math.min(
     1,
@@ -272,10 +351,10 @@ async function describeInTab(img) {
   const optsPtr = writeCString(Module, "{}");
   const outPtr = Module._malloc(OUT_CAPACITY);
   try {
-    if (!rgbPtr || !outPtr) throw new Error("out of memory");
-    // Re-read HEAPU8 after every malloc — growing the heap swaps the buffer.
+    if (!rgbPtr || !outPtr) throw new Error("mémoire insuffisante");
+    // Relire HEAPU8 après chaque malloc : agrandir le tas remplace le buffer.
     Module.HEAPU8.set(rgb, rgbPtr);
-    // Positive return is the output byte count; negative is a failure.
+    // Un retour positif est la taille de sortie, un retour négatif un échec.
     const code = Module._cactus_describe(
       rgbPtr,
       w,
@@ -288,7 +367,7 @@ async function describeInTab(img) {
     );
     if (code < 0) {
       const msg = Module.UTF8ToString(Module._cactus_last_error());
-      throw new Error(msg || "cactus_describe failed");
+      throw new Error(msg || "échec de cactus_describe");
     }
     const json = Module.UTF8ToString(outPtr);
     return { result: JSON.parse(json), inputW: w, inputH: h };
@@ -303,8 +382,10 @@ async function describeInTab(img) {
 
 let file = null;
 let objectUrl = null;
-let loadedImage = null; // HTMLImageElement at natural resolution
-let lastResult = null; // mirage JSON result
+let loadedImage = null; // HTMLImageElement à sa résolution naturelle
+let lastResult = null; // JSON Mirage
+let lastRawJson = ""; // texte exact affiché, utilisé pour la copie
+let lastAnalysis = null; // métadonnées de la dernière analyse
 let hoveredIndex = -1;
 let selectedIndex = -1;
 let hoveredTextIndex = -1;
@@ -339,14 +420,13 @@ function hexToRgba(hex, alpha) {
   return `rgba(${r},${g},${b},${alpha})`;
 }
 
-// Mirage bboxes live in 0–1000 normalized space; canvas is natural image size.
+// Les bbox Mirage sont en 0 à 1000 ; le canevas est à la taille naturelle.
 function toPixels(bbox, w, h) {
   const [x1, y1, x2, y2] = bbox;
   return [(x1 / 1000) * w, (y1 / 1000) * h, (x2 / 1000) * w, (y2 / 1000) * h];
 }
 
-// Pixel-space Path2D for an object: tight mask polygon when available,
-// bbox rect fallback otherwise. Used for spotlight cutout + hit-testing.
+// Chemin pixel d’un objet : polygone du masque si présent, sinon rectangle bbox.
 function objectPath(obj, w, h) {
   if (!obj) return null;
   if (Array.isArray(obj.mask) && obj.mask.length >= 6) {
@@ -373,7 +453,7 @@ function loadImage(url) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error("Could not decode image."));
+    img.onerror = () => reject(new Error("impossible de décoder l’image"));
     img.src = url;
   });
 }
@@ -410,8 +490,8 @@ function renderScene() {
     sceneWrap.hidden = true;
     return;
   }
-  // Known keys first in a stable order, then any extra keys the model
-  // returns (e.g. surface, style) in the order they arrived.
+  // Clés connues d’abord dans un ordre stable, puis les clés supplémentaires
+  // renvoyées par le modèle (surface, style…) dans leur ordre d’arrivée.
   const ordered = [
     ...SCENE_KEYS.filter((k) => scene[k]),
     ...Object.keys(scene).filter((k) => !SCENE_KEYS.includes(k) && scene[k]),
@@ -421,7 +501,8 @@ function renderScene() {
     pill.className = "scene-pill";
     const key = document.createElement("span");
     key.className = "k";
-    key.textContent = k.replace(/_/g, " ");
+    key.textContent = SCENE_LABELS[k] || k.replace(/_/g, " ");
+    key.title = k;
     const val = document.createElement("span");
     val.className = "v";
     val.textContent =
@@ -454,14 +535,21 @@ function renderObjList() {
     const li = document.createElement("li");
     li.className = "obj-item";
     li.dataset.index = String(i);
+    li.tabIndex = 0;
+    li.setAttribute("role", "button");
     const color = colorFor(i);
-    const score = typeof obj.score === "number" ? obj.score.toFixed(2) : "—";
+    const score = typeof obj.score === "number" ? obj.score.toFixed(2) : "n/d";
     const bits = describeBits(obj);
     li.innerHTML = `<span class="dot"></span><span class="name"></span><span class="meta"></span>`;
     li.querySelector(".dot").style.background = color;
-    li.querySelector(".name").textContent = obj.name || "object";
+    const name = obj.name || "objet";
+    li.querySelector(".name").textContent = name;
     li.querySelector(".meta").textContent = score + (bits ? ` · ${bits}` : "");
-    li.title = bits || obj.name || "object";
+    li.title = bits || name;
+    li.setAttribute(
+      "aria-label",
+      `${name}, confiance ${score}${bits ? `, ${bits}` : ""}. Activer pour mettre en évidence.`,
+    );
     li.addEventListener("mouseenter", () => setHovered(i));
     li.addEventListener("mouseleave", () => setHovered(-1));
     li.addEventListener("click", () => {
@@ -469,12 +557,18 @@ function renderObjList() {
       syncActiveList();
       redraw();
     });
+    li.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter" || ev.key === " ") {
+        ev.preventDefault();
+        li.click();
+      }
+    });
     objList.appendChild(li);
   });
   objCount.textContent =
     shown < objects.length
-      ? `${shown} of ${objects.length} objects`
-      : objects.length + (objects.length === 1 ? " object" : " objects");
+      ? `${shown} sur ${objects.length} objets`
+      : `${objects.length} ${objects.length === 1 ? "objet" : "objets"}`;
   syncActiveList();
 }
 
@@ -496,6 +590,15 @@ async function copyString(s) {
     ta.remove();
     return ok;
   }
+}
+
+function flashButton(btn, text) {
+  const orig = btn.dataset.label || btn.textContent;
+  btn.dataset.label = orig;
+  btn.textContent = text;
+  setTimeout(() => {
+    btn.textContent = orig;
+  }, 1400);
 }
 
 function setHoveredText(i) {
@@ -524,14 +627,16 @@ function renderTextList() {
     const li = document.createElement("li");
     li.className = "obj-item text-item";
     li.dataset.index = String(i);
+    li.tabIndex = 0;
+    li.setAttribute("role", "button");
     li.title =
-      (t.string || "") + (t.string ? " — click to copy" : "Click to copy");
+      (t.string || "") + (t.string ? " · cliquez pour copier" : "Cliquez pour copier");
     li.innerHTML = `<span class="quote">&ldquo;</span><span class="name"></span><span class="quote">&rdquo;</span><span class="meta"></span>`;
-    li.querySelector(".name").textContent = t.string || "(unreadable)";
+    li.querySelector(".name").textContent = t.string || "(illisible)";
     li.querySelector(".meta").textContent =
       typeof t.score === "number"
-        ? `${t.score.toFixed(2)} · click to copy`
-        : "click to copy";
+        ? `${t.score.toFixed(2)} · cliquer pour copier`
+        : "cliquer pour copier";
     li.addEventListener("mouseenter", () => setHoveredText(i));
     li.addEventListener("mouseleave", () => setHoveredText(-1));
     li.addEventListener("click", async () => {
@@ -539,31 +644,66 @@ function renderTextList() {
       const ok = await copyString(t.string);
       const meta = li.querySelector(".meta");
       const orig = meta.textContent;
-      meta.textContent = ok ? "copied ✓" : "copy failed";
+      meta.textContent = ok ? "copié ✓" : "échec de la copie";
       setTimeout(() => {
         meta.textContent = orig;
       }, 1200);
+    });
+    li.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter" || ev.key === " ") {
+        ev.preventDefault();
+        li.click();
+      }
     });
     textList.appendChild(li);
   });
   textCount.textContent =
     shownText < texts.length
-      ? `${shownText} of ${texts.length} strings`
-      : texts.length + (texts.length === 1 ? " string" : " strings");
+      ? `${shownText} sur ${texts.length} textes`
+      : `${texts.length} ${texts.length === 1 ? "texte" : "textes"}`;
   syncInspector();
 }
 
+function renderRelations() {
+  const relations = lastResult?.relations || [];
+  const objects = lastResult?.objects || [];
+  relList.innerHTML = "";
+  if (!relations.length) {
+    relWrap.hidden = true;
+    return;
+  }
+  relWrap.hidden = false;
+  const nameOf = (id) => {
+    const o = objects.find((x) => x && x.id === id);
+    return o?.name ? o.name : `objet ${id}`;
+  };
+  for (const rel of relations) {
+    if (!rel || typeof rel !== "object") continue;
+    const li = document.createElement("li");
+    li.className = "obj-item rel-item";
+    li.innerHTML = `<span class="name"></span><span class="meta"></span>`;
+    const predicate = PREDICATES[rel.predicate] || rel.predicate || "lié à";
+    li.querySelector(".name").textContent =
+      `${nameOf(rel.subject)} ${predicate} ${nameOf(rel.object)}`;
+    li.querySelector(".meta").textContent =
+      `objets ${rel.subject} → ${rel.object} · prédicat « ${rel.predicate} »`;
+    relList.appendChild(li);
+  }
+  relCount.textContent = `${relations.length} ${relations.length === 1 ? "relation" : "relations"}`;
+}
+
 function syncInspector() {
-  // renderTextList always runs last after the other panels update, so one
-  // sync point here covers describe / select / clear.
+  // renderTextList passe en dernier : un seul point de synchronisation suffit.
   inspectorEmpty.style.display =
-    sceneWrap.hidden && objListWrap.hidden && textWrap.hidden ? "" : "none";
+    sceneWrap.hidden && objListWrap.hidden && textWrap.hidden && relWrap.hidden
+      ? ""
+      : "none";
   confRow.hidden = !lastResult;
 }
 
 function pickObjectAt(nx, ny) {
-  // Normalized 0–1000 point → smallest containing bbox wins (beats big
-  // background regions like grass covering smaller objects).
+  // Point normalisé 0 à 1000 : la plus petite bbox gagnante (un fond large ne
+  // masque pas les objets plus petits).
   const objects = lastResult?.objects || [];
   let best = -1;
   let bestArea = Infinity;
@@ -610,12 +750,9 @@ async function redraw() {
   ctx.clearRect(0, 0, w, h);
   ctx.drawImage(loadedImage, 0, 0, w, h);
 
-  // Spotlight: dim everything except the selected object's mask.
-  // Rendered on an offscreen layer so the cutout stays razor-sharp and
-  // the photo underneath is untouched.
+  // Mise en évidence : on assombrit tout sauf le masque de l’objet sélectionné.
   if (lastResult && toggleSpotlight.checked && selectedIndex >= 0) {
     const sel = lastResult.objects[selectedIndex];
-    // A selected object below the confidence threshold gets no cutout.
     const cutout = passesScore(sel) ? objectPath(sel, w, h) : null;
     if (cutout) {
       const dim = document.createElement("canvas");
@@ -627,7 +764,6 @@ async function redraw() {
       dctx.globalCompositeOperation = "destination-out";
       dctx.fill(cutout);
       ctx.drawImage(dim, 0, 0);
-      // Crisp rim around the cutout so the edge reads on any background.
       ctx.save();
       ctx.strokeStyle = colorFor(selectedIndex);
       ctx.lineWidth = Math.max(2, Math.round(w / 200));
@@ -642,14 +778,13 @@ async function redraw() {
   const showLabels = toggleLabels.checked;
   const showText = toggleText.checked;
   if (!showBoxes && !showMasks && !showText && !showLabels) return;
-  // Scale label font with image size so small thumbs stay readable-ish.
   const fontSize = Math.max(12, Math.round(w / 42));
   ctx.font = `600 ${fontSize}px -apple-system, Inter, Segoe UI, sans-serif`;
   ctx.textBaseline = "top";
 
   const objects = lastResult.objects || [];
   const activeIndex = hoveredIndex >= 0 ? hoveredIndex : selectedIndex;
-  // Masks first so box strokes + labels sit on top.
+  // Masques d’abord, pour que traits et étiquettes passent au-dessus.
   if (showMasks) {
     objects.forEach((obj, i) => {
       if (!obj || !Array.isArray(obj.mask) || obj.mask.length < 6) return;
@@ -694,7 +829,7 @@ async function redraw() {
     }
 
     if (showLabels || isActive) {
-      const label = `${obj.name || "object"}${typeof obj.score === "number" ? ` ${obj.score.toFixed(2)}` : ""}`;
+      const label = `${obj.name || "objet"}${typeof obj.score === "number" ? ` ${obj.score.toFixed(2)}` : ""}`;
       const pad = 5;
       const textW = ctx.measureText(label).width;
       const boxH = fontSize + pad * 2;
@@ -738,19 +873,32 @@ async function redraw() {
   }
 }
 
+function isSupportedImage(f) {
+  if (OK_TYPES.has(f.type)) return true;
+  // Certains systèmes ne renseignent pas le type : on se rabat sur l’extension.
+  return !f.type && OK_EXT.test(f.name);
+}
+
 async function selectFile(f) {
   if (!f) return;
-  if (!f.type.startsWith("image/")) {
-    setStatus("That file is not an image. Pick a JPG/PNG/WebP.", "err");
+  if (!isSupportedImage(f)) {
+    fileInput.value = "";
+    setStatus(
+      "Format non accepté. Choisissez une image JPG, PNG ou WebP.",
+      "err",
+    );
     return;
   }
   file = f;
   lastResult = null;
+  lastRawJson = "";
+  lastAnalysis = null;
   hoveredIndex = -1;
   selectedIndex = -1;
   renderObjList();
   renderScene();
   renderTextList();
+  renderRelations();
   renderDescription();
   if (objectUrl) URL.revokeObjectURL(objectUrl);
   objectUrl = URL.createObjectURL(f);
@@ -760,16 +908,26 @@ async function selectFile(f) {
     loadedImage = await loadImage(objectUrl);
     await redraw();
   } catch (err) {
-    setStatus(`Error: ${err.message}`, "err");
+    setStatus(`Erreur : ${err.message}`, "err");
     return;
   }
   previewEl.classList.add("show");
   fnameEl.textContent = f.name;
-  fsizeEl.textContent = `${(f.size / 1024).toFixed(1)} KB`;
+  fsizeEl.textContent = `${(f.size / 1024).toFixed(1)} Ko`;
   goBtn.disabled = false;
-  setStatus("Ready — hit “Describe image”.", "ok");
+  setStatus(
+    engine.ready
+      ? "Prêt. Cliquez sur « Analyser l’image »."
+      : "Prêt. Au premier lancement, le moteur et le modèle (environ 22 Mo) sont téléchargés une seule fois.",
+    "ok",
+  );
 }
 
+const browseBtn = document.getElementById("browse");
+browseBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  fileInput.click();
+});
 drop.addEventListener("click", () => fileInput.click());
 fileInput.addEventListener("change", (e) => selectFile(e.target.files[0]));
 ["dragover", "dragenter"].forEach((ev) => {
@@ -782,24 +940,25 @@ fileInput.addEventListener("change", (e) => selectFile(e.target.files[0]));
   drop.addEventListener(ev, (e) => {
     e.preventDefault();
     drop.classList.remove("drag");
-  })
-}
-);
+  });
+});
 drop.addEventListener("drop", (e) => {
   const f = e.dataTransfer.files?.[0];
   selectFile(f);
 });
 
 [toggleBoxes, toggleMasks, toggleLabels, toggleText, toggleSpotlight].forEach(
-  (el) => { el.addEventListener("change", redraw) }
+  (el) => {
+    el.addEventListener("change", redraw);
+  },
 );
 
 confRange.addEventListener("input", () => {
   minScore = confRange.value / 100;
   confVal.textContent = minScore.toFixed(2);
-  const objs = (lastResult?.objects) || [];
-  const texts = (lastResult?.text) || [];
-  // Drop hover/selection that no longer passes so canvas + lists stay in sync.
+  const objs = lastResult?.objects || [];
+  const texts = lastResult?.text || [];
+  // Abandonner survol/sélection qui ne passe plus : canevas et listes restent cohérents.
   if (hoveredIndex >= 0 && !passesScore(objs[hoveredIndex])) hoveredIndex = -1;
   if (selectedIndex >= 0 && !passesScore(objs[selectedIndex]))
     selectedIndex = -1;
@@ -811,23 +970,100 @@ confRange.addEventListener("input", () => {
 });
 
 copyJsonBtn.addEventListener("click", async () => {
-  const ok = await copyString(outEl.textContent);
-  const orig = copyJsonBtn.textContent;
-  copyJsonBtn.textContent = ok ? "Copied ✓" : "Copy failed";
-  setTimeout(() => {
-    copyJsonBtn.textContent = orig;
-  }, 1200);
+  if (!lastResult || !lastRawJson) {
+    flashButton(copyJsonBtn, "Rien à copier");
+    return;
+  }
+  // La copie reprend le JSON brut affiché, sans métadonnées ajoutées.
+  const ok = await copyString(lastRawJson);
+  flashButton(copyJsonBtn, ok ? "Copié ✓" : "Échec de la copie");
+});
+
+function pad2(n) {
+  return String(n).padStart(2, "0");
+}
+
+function localIso(d) {
+  const off = -d.getTimezoneOffset();
+  const sign = off >= 0 ? "+" : "-";
+  const abs = Math.abs(off);
+  return (
+    `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}` +
+    `T${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}` +
+    `${sign}${pad2(Math.floor(abs / 60))}:${pad2(abs % 60)}`
+  );
+}
+
+function safeFileStem(name) {
+  const base = (name || "image").replace(/\.[^.]+$/, "");
+  const ascii = base
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return ascii || "image";
+}
+
+function buildExportPayload() {
+  const now = new Date();
+  return {
+    // Sortie du modèle strictement inchangée.
+    mirage_output: lastResult,
+    analysis_metadata: {
+      file_name: file?.name || null,
+      file_size_bytes: file?.size || null,
+      image_width: loadedImage?.naturalWidth || null,
+      image_height: loadedImage?.naturalHeight || null,
+      input_width: lastAnalysis?.inputW || null,
+      input_height: lastAnalysis?.inputH || null,
+      inference_ms: lastAnalysis?.inferenceMs ?? null,
+      engine_load_ms: lastAnalysis?.loadMs ?? null,
+      total_ms: lastAnalysis?.totalMs ?? null,
+      engine: "cactus.wasm (WebAssembly)",
+      model: "Cactus-Compute/mirage (mirage.cact)",
+      app_version: APP_VERSION,
+      locale: "fr",
+      exported_at_local: localIso(now),
+    },
+  };
+}
+
+downloadJsonBtn.addEventListener("click", () => {
+  if (!lastResult) {
+    flashButton(downloadJsonBtn, "Rien à télécharger");
+    return;
+  }
+  const payload = buildExportPayload();
+  const stamp =
+    `${new Date().getFullYear()}${pad2(new Date().getMonth() + 1)}${pad2(new Date().getDate())}` +
+    `-${pad2(new Date().getHours())}${pad2(new Date().getMinutes())}${pad2(new Date().getSeconds())}`;
+  const name = `${safeFileStem(file?.name)}-mirage-${stamp}.json`;
+  const text = `${JSON.stringify(payload, null, 2)}\n`;
+  const blob = new Blob([text], { type: "application/json;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  flashButton(downloadJsonBtn, "Téléchargé ✓");
 });
 
 clearBtn.addEventListener("click", () => {
   file = null;
   fileInput.value = "";
   lastResult = null;
+  lastRawJson = "";
+  lastAnalysis = null;
   hoveredIndex = -1;
   selectedIndex = -1;
   renderObjList();
   renderScene();
   renderTextList();
+  renderRelations();
   renderDescription();
   loadedImage = null;
   if (objectUrl) {
@@ -840,63 +1076,99 @@ clearBtn.addEventListener("click", () => {
   confRange.value = "0";
   confVal.textContent = "0.00";
   goBtn.disabled = true;
-  // The engine and weights stay loaded so the next image is instant.
+  // Le moteur et les poids restent chargés : l’image suivante est immédiate.
   previewEl.classList.remove("show");
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   canvas.removeAttribute("width");
   outEl.innerHTML =
-    '<span class="empty">// Cleared. Pick another image.</span>';
-  timingEl.textContent = "—";
+    '<span class="empty">// Réinitialisé. Choisissez une autre image.</span>';
+  timingEl.textContent = "…";
   metaEl.textContent = "";
-  setStatus("No image selected.");
+  setStatus("Aucune image sélectionnée.");
 });
 
 goBtn.addEventListener("click", async () => {
   if (!file || !loadedImage) return;
   goBtn.disabled = true;
-  const t0 = performance.now();
   const firstRun = !engine.ready;
+  const tStart = performance.now();
   setStatus(
     firstRun
-      ? '<span class="spinner"></span>Loading engine + weights…'
-      : '<span class="spinner"></span>Running cactus_describe in this tab…',
+      ? '<span class="spinner"></span>Chargement du moteur et des poids du modèle…'
+      : '<span class="spinner"></span>Analyse en cours dans cet onglet…',
     "loading",
   );
   outEl.textContent = "…";
   try {
+    let loadMs = 0;
+    if (!engine.ready) {
+      await ensureEngine();
+      loadMs = Math.round(performance.now() - tStart);
+      setStatus(
+        '<span class="spinner"></span>Analyse en cours dans cet onglet…',
+        "loading",
+      );
+    }
+    // Le temps d’inférence exclut le téléchargement et l’initialisation.
+    const tInfer = performance.now();
     const { result, inputW, inputH } = await describeInTab(loadedImage);
+    const inferenceMs = Math.round(performance.now() - tInfer);
+    const totalMs = Math.round(performance.now() - tStart);
     lastResult = result;
+    lastAnalysis = { inputW, inputH, inferenceMs, loadMs, totalMs };
     hoveredIndex = -1;
     selectedIndex = -1;
     renderObjList();
     renderScene();
     renderDescription();
     renderTextList();
+    renderRelations();
+    syncInspector();
     await redraw();
-    const dt = ((performance.now() - t0) / 1000).toFixed(2);
-    outEl.textContent = JSON.stringify(result, null, 2);
-    timingEl.textContent = `${dt}s`;
+    lastRawJson = JSON.stringify(result, null, 2);
+    outEl.textContent = lastRawJson;
+    const dt = (totalMs / 1000).toFixed(2);
+    timingEl.textContent = `${(inferenceMs / 1000).toFixed(2)} s`;
+    timingEl.title =
+      `Inférence : ${(inferenceMs / 1000).toFixed(2)} s · ` +
+      `total affiché : ${(totalMs / 1000).toFixed(2)} s` +
+      (loadMs ? ` (dont ${(loadMs / 1000).toFixed(2)} s de chargement)` : "");
     const n = (result.objects || []).length;
     metaEl.textContent =
-      file.name +
-      " → " +
-      n +
-      " object(s) · wasm on " +
-      inputW +
-      "×" +
-      inputH +
-      " px · " +
-      (firstRun ? "incl. model download, " : "") +
-      dt +
-      "s";
+      `${file.name} → ${n} objet(s) · wasm sur ${inputW}×${inputH} px · ` +
+      `inférence ${(inferenceMs / 1000).toFixed(2)} s` +
+      (firstRun ? ` · total ${dt} s (dont téléchargement du modèle)` : "");
     setStatus(
-      `Done in ${dt}s — ${n} object(s) boxed on canvas.`,
+      `Analyse terminée en ${(inferenceMs / 1000).toFixed(2)} s d’inférence : ${n} objet(s) encadré(s) sur l’image.`,
       "ok",
     );
   } catch (err) {
-    setStatus(`Error: ${err.message || err}`, "err");
-    outEl.textContent = `ERROR\n\n${err.message || err}`;
+    const detail = err instanceof Error ? err.message : String(err);
+    setStatus(
+      `Erreur pendant l’analyse : ${detail}. Vérifiez votre connexion, puis réessayez.`,
+      "err",
+    );
+    outEl.textContent = `ERREUR\n\n${detail}`;
+    if (!engine.ready) setPill(enginePill, "échec", "err");
   } finally {
     goBtn.disabled = !file;
   }
 });
+
+// ---------------------------------------------------------------- démarrage
+
+if (location.protocol === "file:") {
+  setStatus(
+    "Ouvrez cette page via un petit serveur local (par exemple « python -m http.server ») : le navigateur bloque WebAssembly et les fichiers locaux en mode file://.",
+    "err",
+  );
+  goBtn.disabled = true;
+  setPill(enginePill, "indisponible", "err");
+} else if (typeof WebAssembly !== "object") {
+  setStatus(
+    "WebAssembly n’est pas disponible dans ce navigateur. Utilisez une version récente de Microsoft Edge, Google Chrome ou Firefox.",
+    "err",
+  );
+  goBtn.disabled = true;
+  setPill(enginePill, "indisponible", "err");
+}

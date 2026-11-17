@@ -1,143 +1,274 @@
-<!-- biome-ignore-all lint/a11y/useButtonType: i dont care -->
-<!-- biome-ignore-all lint/a11y/noRedundantAlt: i dont care -->
-<!-- biome-ignore-all lint/a11y/noSvgWithoutTitle: i dont care -->
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mirage wasm — Image Describe</title>
+  <title>Mirage WASM français : OCR et vision locale dans le navigateur</title>
+  <meta name="description"
+    content="Testez Mirage WASM en français pour analyser localement des images : OCR, détection d’objets, segmentation, relations visuelles et export JSON." />
+  <link rel="canonical" href="https://adam-s-tech.github.io/mirage-demo/" />
+  <meta name="robots" content="index, follow" />
+  <meta name="theme-color" content="#0b0e14" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Mirage WASM français" />
+  <meta property="og:locale" content="fr_FR" />
+  <meta property="og:title" content="Mirage WASM français : OCR et vision locale dans le navigateur" />
+  <meta property="og:description"
+    content="Analysez une image dans votre navigateur : OCR, détection d’objets, segmentation et export JSON, sans envoi de l’image à un serveur." />
+  <meta property="og:url" content="https://adam-s-tech.github.io/mirage-demo/" />
+  <meta property="og:image" content="https://adam-s-tech.github.io/mirage-demo/og-image.png" />
+  <meta property="og:image:width" content="1280" />
+  <meta property="og:image:height" content="640" />
+  <meta property="og:image:alt"
+    content="Capture de l’interface Mirage WASM en français avec une image de deux cafés et les détections superposées." />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Mirage WASM français : OCR et vision locale dans le navigateur" />
+  <meta name="twitter:description"
+    content="OCR, détection d’objets, segmentation et export JSON dans le navigateur, en local, sans envoi de l’image." />
+  <meta name="twitter:image" content="https://adam-s-tech.github.io/mirage-demo/og-image.png" />
+
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="./favicon-32.png" sizes="32x32" type="image/png" />
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+  <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="stylesheet" href="./styles.css" />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Mirage WASM français",
+    "applicationCategory": "MultimediaApplication",
+    "operatingSystem": "Windows, macOS, Linux, Android, iOS",
+    "browserRequirements": "Navigateur récent compatible WebAssembly (Edge, Chrome, Firefox)",
+    "softwareVersion": "1.0.0",
+    "inLanguage": "fr",
+    "isAccessibleForFree": true,
+    "description": "Démonstration française du modèle de vision Mirage exécuté en WebAssembly : OCR, détection d’objets, segmentation, relations visuelles et export JSON, sans envoi de l’image à un serveur.",
+    "url": "https://adam-s-tech.github.io/mirage-demo/",
+    "license": "https://github.com/Adam-s-tech/mirage-demo/blob/main/NOTICE.md",
+    "isBasedOn": "https://github.com/joemaddalone/mirage-demo",
+    "creator": {
+      "@type": "Organization",
+      "name": "Cactus Compute",
+      "url": "https://github.com/Cactus-Compute"
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "EUR"
+    }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Mirage WASM français",
+    "url": "https://adam-s-tech.github.io/mirage-demo/",
+    "inLanguage": "fr",
+    "description": "Démonstration pédagogique en français de Mirage WASM : OCR et vision par ordinateur dans le navigateur."
+  }
+  </script>
 </head>
 
 <body>
-  <header class="topbar">
-    <div class="brand">
-      <span class="brand-mark" aria-hidden="true"></span>
-      <h1>Mirage <span>wasm</span></h1>
-      <code class="cmd">cactus_describe → webassembly</code>
-    </div>
-    <div class="top-actions">
-      <span class="pill" id="timing" title="Time from click to rendered overlays">—</span>
-    </div>
-  </header>
+  <a class="skip-link" href="#workbench">Aller au contenu principal</a>
 
-  <main class="workbench">
-    <div class="card leftcol">
-      <div class="drop" id="drop">
-        <input type="file" id="file" accept="image/*" />
-        <div class="drop-icon" aria-hidden="true">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-            stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="3" width="18" height="18" rx="3" />
-            <circle cx="9" cy="9" r="2" />
-            <path d="m21 15-3.5-3.5a2 2 0 0 0-2.8 0L6 20" />
-          </svg>
-        </div>
-        <div class="big">Drop image here or click to browse</div>
-        <div class="small">JPG / PNG / WebP — runs in this tab via WebAssembly</div>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <h1 class="brand-title">
+          <span class="brand-name">Mirage <span class="accent">wasm</span></span>
+          <span class="brand-tagline">OCR et vision locale dans le navigateur</span>
+        </h1>
+        <code class="cmd">cactus_describe → webassembly</code>
       </div>
-      <div class="thumb-wrap" id="thumbWrap" hidden>
-        <div class="objlist-head">
-          <h3>Original</h3>
-        </div>
-        <img id="thumb" alt="Original uploaded image" />
+      <nav class="topnav" aria-label="Navigation principale">
+        <a href="./" aria-current="page">Démonstration</a>
+        <a href="./documentation.html">Documentation</a>
+      </nav>
+      <div class="top-actions">
+        <span class="pill" id="timing" title="Temps d’inférence de la dernière analyse">…</span>
       </div>
-      <div class="col-actions">
-        <button class="primary" id="go" disabled>Describe image</button>
-        <button class="ghost" id="clear">Clear</button>
-      </div>
-      <div class="status" id="status" role="status">No image selected.</div>
+    </header>
 
-      <div class="engine-wrap" id="engineWrap">
-        <div class="objlist-head">
-          <h3>Engine</h3><span class="pill" id="enginePill">idle</span>
+    <main class="workbench" id="workbench">
+      <div class="card leftcol">
+        <input type="file" id="file" class="file-input" accept="image/jpeg,image/png,image/webp" />
+        <div class="drop" id="drop">
+          <img class="drop-icon" src="./favicon.svg" alt="" width="26" height="26" />
+          <p class="big">Déposez une image ici ou cliquez pour parcourir</p>
+          <p class="small">JPG, PNG ou WebP : l’analyse s’exécute dans cet onglet via WebAssembly.</p>
+          <button class="ghost browse" id="browse" type="button">Parcourir les fichiers</button>
         </div>
-        <div class="load-row">
-          <div class="load-top"><span>cactus.wasm</span><span class="load-pct" id="enginePct">—</span></div>
-          <div class="bar"><i id="engineBar"></i></div>
-        </div>
-        <div class="load-row">
-          <div class="load-top"><span>mirage.cact</span><span class="load-pct" id="modelPct">—</span></div>
-          <div class="bar"><i id="modelBar"></i></div>
-        </div>
-        <p class="load-note">Nothing is uploaded — pixels are read in this tab. Weights download once (~22 MB) and are
-          then served from the browser cache.</p>
-      </div>
-
-      <div class="desc-wrap" id="descWrap" hidden>
-        <div class="objlist-head">
-          <h3>Description</h3><span class="pill" id="descLang" hidden>—</span>
-        </div>
-        <div id="descBody"></div>
-      </div>
-    </div>
-
-    <div class="centercol">
-      <section class="card viewport" aria-label="Image viewport">
-        <div class="preview" id="preview">
-          <div class="canvas-wrap">
-            <canvas id="canvas"></canvas>
+        <div class="thumb-wrap" id="thumbWrap" hidden>
+          <div class="objlist-head">
+            <h3>Image originale</h3>
           </div>
-          <div class="overlay-controls" id="overlayControls" role="toolbar" aria-label="Overlay layers">
-            <label><input type="checkbox" id="toggleBoxes" checked /> Boxes</label>
-            <label><input type="checkbox" id="toggleMasks" checked /> Masks</label>
-            <label><input type="checkbox" id="toggleLabels" checked /> Labels</label>
-            <label><input type="checkbox" id="toggleText" checked /> Text</label>
-            <label><input type="checkbox" id="toggleSpotlight" checked /> Spotlight</label>
+          <img id="thumb" alt="Aperçu du fichier choisi" />
+        </div>
+        <div class="col-actions">
+          <button class="primary" id="go" type="button" disabled>Analyser l’image</button>
+          <button class="ghost" id="clear" type="button">Réinitialiser</button>
+        </div>
+        <div class="status" id="status" role="status" aria-live="polite">Aucune image sélectionnée.</div>
+
+        <div class="engine-wrap" id="engineWrap">
+          <div class="objlist-head">
+            <h3>Moteur</h3><span class="pill" id="enginePill">inactif</span>
           </div>
-          <div class="viewport-foot"><span id="fname">—</span><span id="fsize">—</span></div>
+          <div class="load-row">
+            <div class="load-top"><span>cactus.wasm</span><span class="load-pct" id="enginePct">…</span></div>
+            <div class="bar"><i id="engineBar"></i></div>
+          </div>
+          <div class="load-row">
+            <div class="load-top"><span>mirage.cact</span><span class="load-pct" id="modelPct">…</span></div>
+            <div class="bar"><i id="modelBar"></i></div>
+          </div>
+          <p class="load-note">Aucun fichier n’est envoyé vers un serveur : les pixels restent dans cet onglet. Les poids
+            du modèle (environ 22 Mo) sont téléchargés une seule fois, puis servis depuis le cache du navigateur.</p>
         </div>
-        <div class="preview-empty">Upload an image, then hit Describe — the preview lands here.</div>
-      </section>
 
-      <section class="card terminal" aria-label="Raw JSON output">
-        <div class="term-head">
-          <span class="term-dots" aria-hidden="true"><i></i><i></i><i></i></span>
-          <h2>output — cactus_describe (wasm)</h2>
-          <button class="ghost sm" id="copyJson">Copy</button>
+        <div class="desc-wrap" id="descWrap" hidden>
+          <div class="objlist-head">
+            <h3>Interprétation</h3><span class="pill" id="descLang" hidden>…</span>
+          </div>
+          <div id="descBody"></div>
         </div>
-        <pre id="out"><span class="empty">// Upload an image and hit “Describe image”.
-// JSON returned by cactus_describe() inside this tab.</span></pre>
-        <footer id="meta"></footer>
-      </section>
-    </div>
-
-    <aside class="card inspector" aria-label="Analysis inspector">
-      <div class="inspector-empty" id="inspectorEmpty">Describe an image — scene, objects, and text will land here.
       </div>
-      <div class="conf-row" id="confRow" hidden>
-        <div class="objlist-head">
-          <h3>Min confidence</h3><span class="pill" id="confVal">0.00</span>
+
+      <div class="centercol">
+        <section class="card viewport" aria-label="Aperçu de l’image et des détections">
+          <div class="preview" id="preview">
+            <div class="canvas-wrap">
+              <canvas id="canvas" role="img"
+                aria-label="Aperçu de l’image analysée avec les boîtes, masques et textes détectés superposés"></canvas>
+            </div>
+            <div class="overlay-controls" id="overlayControls" role="toolbar" aria-label="Couches de superposition">
+              <label><input type="checkbox" id="toggleBoxes" checked /> Boîtes</label>
+              <label><input type="checkbox" id="toggleMasks" checked /> Masques</label>
+              <label><input type="checkbox" id="toggleLabels" checked /> Étiquettes</label>
+              <label><input type="checkbox" id="toggleText" checked /> Textes</label>
+              <label><input type="checkbox" id="toggleSpotlight" checked /> Mise en évidence</label>
+            </div>
+            <div class="viewport-foot"><span id="fname">…</span><span id="fsize">…</span></div>
+          </div>
+          <div class="preview-empty">Importez une image, puis cliquez sur « Analyser l’image » : l’aperçu
+            s’affichera ici.</div>
+        </section>
+
+        <section class="card terminal" aria-label="Sortie JSON brute">
+          <div class="term-head">
+            <span class="term-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+            <h2>sortie · cactus_describe (wasm)</h2>
+            <div class="term-actions">
+              <button class="ghost sm" id="copyJson" type="button">Copier</button>
+              <button class="ghost sm" id="downloadJson" type="button">Télécharger le JSON</button>
+            </div>
+          </div>
+          <pre id="out" aria-live="polite"><span class="empty">// Importez une image puis cliquez sur « Analyser l’image ».
+// Le JSON renvoyé par cactus_describe() dans cet onglet s’affichera ici.</span></pre>
+          <footer id="meta"></footer>
+        </section>
+      </div>
+
+      <aside class="card inspector" aria-label="Inspecteur de l’analyse">
+        <div class="inspector-empty" id="inspectorEmpty">Lancez une analyse : la scène, les objets, les textes et les
+          relations apparaîtront ici.</div>
+        <div class="conf-row" id="confRow" hidden>
+          <div class="objlist-head">
+            <h3>Confiance minimale</h3><span class="pill" id="confVal">0.00</span>
+          </div>
+          <input type="range" id="confRange" min="0" max="100" value="0" step="1"
+            aria-label="Score de confiance minimal" />
         </div>
-        <input type="range" id="confRange" min="0" max="100" value="0" step="1" aria-label="Minimum confidence score" />
-      </div>
-      <div class="scene-wrap collapsible" id="sceneWrap" hidden>
-        <button class="collapse-head" id="sceneHead" aria-expanded="true" aria-controls="scenePills">
-          <h3>Scene</h3>
-          <span class="chev" aria-hidden="true">▾</span>
-        </button>
-        <div class="scene-pills" id="scenePills"></div>
-      </div>
+        <div class="scene-wrap collapsible" id="sceneWrap" hidden>
+          <button class="collapse-head" id="sceneHead" type="button" aria-expanded="true" aria-controls="scenePills">
+            <h3>Scène</h3>
+            <span class="chev" aria-hidden="true">▾</span>
+          </button>
+          <div class="scene-pills" id="scenePills"></div>
+        </div>
 
-      <div class="objlist-wrap collapsible" id="objListWrap" hidden>
-        <button class="collapse-head" id="objHead" aria-expanded="true" aria-controls="objList">
-          <h3>Objects</h3><span class="pill" id="objCount">—</span>
-          <span class="chev" aria-hidden="true">▾</span>
-        </button>
-        <ul class="obj-list" id="objList"></ul>
-      </div>
+        <div class="objlist-wrap collapsible" id="objListWrap" hidden>
+          <button class="collapse-head" id="objHead" type="button" aria-expanded="true" aria-controls="objList">
+            <h3>Objets</h3><span class="pill" id="objCount">…</span>
+            <span class="chev" aria-hidden="true">▾</span>
+          </button>
+          <ul class="obj-list" id="objList"></ul>
+        </div>
 
-      <div class="objlist-wrap collapsible" id="textWrap" hidden>
-        <button class="collapse-head" id="textHead" aria-expanded="true" aria-controls="textList">
-          <h3>Text</h3><span class="pill" id="textCount">—</span>
-          <span class="chev" aria-hidden="true">▾</span>
-        </button>
-        <ul class="obj-list" id="textList"></ul>
-      </div>
-    </aside>
-  </main>
+        <div class="objlist-wrap collapsible" id="textWrap" hidden>
+          <button class="collapse-head" id="textHead" type="button" aria-expanded="true" aria-controls="textList">
+            <h3>Textes détectés</h3><span class="pill" id="textCount">…</span>
+            <span class="chev" aria-hidden="true">▾</span>
+          </button>
+          <ul class="obj-list" id="textList"></ul>
+        </div>
+
+        <div class="objlist-wrap collapsible" id="relWrap" hidden>
+          <button class="collapse-head" id="relHead" type="button" aria-expanded="true" aria-controls="relList">
+            <h3>Relations</h3><span class="pill" id="relCount">…</span>
+            <span class="chev" aria-hidden="true">▾</span>
+          </button>
+          <ul class="obj-list" id="relList"></ul>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <noscript>
+    <p class="noscript">Cette démonstration a besoin de JavaScript et de WebAssembly. Le contenu de présentation
+      ci-dessous reste lisible, mais l’analyse d’image est désactivée. Consultez la documentation du dépôt pour
+      installer et lancer la démonstration localement.</p>
+  </noscript>
+
+  <div class="editorial">
+    <section aria-labelledby="titre-intro">
+      <h2 id="titre-intro">Un modèle de vision local, exécuté dans le navigateur</h2>
+      <p>Mirage WASM est une démonstration de vision par ordinateur qui tourne entièrement dans l’onglet : l’image est
+        lue par le navigateur, passée au moteur Cactus compilé en WebAssembly, puis décrite par le modèle Mirage de
+        Cactus Compute. Aucun pixel n’est envoyé à un serveur d’inférence.</p>
+      <p>L’outil combine plusieurs sorties dans un seul résultat : description de scène, détection d’objets avec boîtes
+        englobantes et scores de confiance, masques de segmentation, textes détectés avec leurs coordonnées, relations
+        spatiales et une interprétation synthétique. Le tout est exposé en JSON structuré, copiable et téléchargeable.</p>
+      <p><a href="./documentation.html">Lire la documentation complète : fonctionnement, exemples, limites, cas d’usage
+          et confidentialité</a>.</p>
+    </section>
+
+    <section aria-labelledby="titre-confidentialite">
+      <h2 id="titre-confidentialite">Confidentialité et traitement local</h2>
+      <p>L’image ne quitte jamais le navigateur : elle est chargée depuis un objet local, dessinée dans un canevas, puis
+        traitée par le moteur inclus dans la page. Aucun outil de mesure d’audience, aucun compte et aucun stockage
+        distant ne sont utilisés.</p>
+      <p><a href="./documentation.html#confidentialite">Détail des requêtes réseau et de la politique de
+          confidentialité</a>.</p>
+    </section>
+
+    <section aria-labelledby="titre-liens">
+      <h2 id="titre-liens">Pour aller plus loin</h2>
+      <ul class="linklist">
+        <li><a href="./documentation.html#exemples">Trois expériences de référence avec leurs sorties JSON</a></li>
+        <li><a href="https://github.com/Adam-s-tech/mirage-demo/blob/main/docs/installation.md">Installation et lancement
+            local</a></li>
+        <li><a href="https://github.com/Adam-s-tech/mirage-demo/blob/main/docs/cas-usage.md">Cas d’usage
+            professionnels</a></li>
+        <li><a href="https://github.com/Adam-s-tech/mirage-demo/blob/main/NOTICE.md">Crédits et licences</a></li>
+      </ul>
+    </section>
+  </div>
+
+  <footer class="page-foot">
+    <p>Mirage et Cactus sont développés par <a href="https://github.com/Cactus-Compute">Cactus Compute</a>. La
+      démonstration originale est de <a href="https://github.com/joemaddalone/mirage-demo">Joe Maddalone</a>. Version
+      française, documentation et tests : Adama BELEM, Adam AI / Next Gen AI.</p>
+    <p><a href="https://github.com/Adam-s-tech/mirage-demo">Code source sur GitHub</a></p>
+  </footer>
 
   <script src="./vendor/cactus.js"></script>
   <script src="./app.js" defer></script>

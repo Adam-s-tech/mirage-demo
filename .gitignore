@@ -34,3 +34,9 @@ wasm-app/models/mirage.cact
 
 # Finder (MacOS) folder config
 .DS_Store
+
+# Mirage: poids téléchargés, artefacts de test et site construit
+wasm-app/models/
+tests/output/
+_site/
+exemples/resultats/*.report.json

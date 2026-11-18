@@ -1,0 +1,65 @@
+name: Déploiement GitHub Pages
+
+# Publication manuelle uniquement : aucun déploiement ne part automatiquement.
+# Activation : Settings > Pages > Source « GitHub Actions », puis Run workflow.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Construire le site statique
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+
+      - name: Installer Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.4"
+
+      - name: Installer les dépendances
+        run: bun install --frozen-lockfile
+
+      - name: Analyse statique
+        run: bun run lint
+
+      - name: Vérifier les fichiers SEO
+        run: bun run check:site
+
+      - name: Préparer l’artefact
+        run: |
+          mkdir -p _site
+          cp -R wasm-app/. _site/
+          mkdir -p _site/exemples/images
+          cp exemples/images/* _site/exemples/images/
+          rm -f _site/models/mirage.cact
+          test -f _site/index.html
+          test -f _site/robots.txt
+          test -f _site/sitemap.xml
+
+      - name: Publier l’artefact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    name: Déployer
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Déployer sur GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

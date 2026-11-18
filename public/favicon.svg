@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Mirage WASM">
+  <rect width="64" height="64" rx="14" fill="#0b0e14"/>
+  <rect x="1" y="1" width="62" height="62" rx="13" fill="none" stroke="#262e44"/>
+  <circle cx="32" cy="29" r="14" fill="none" stroke="#6ea8fe" stroke-width="4"/>
+  <circle cx="32" cy="29" r="5.5" fill="#3dd68c"/>
+  <path d="M18 48h28" stroke="#6ea8fe" stroke-width="4" stroke-linecap="round" opacity="0.75"/>
+</svg>

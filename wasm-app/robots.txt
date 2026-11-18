@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+
+# Les fichiers JSON bruts, les poids du modèle et les ressources WebAssembly ne
+# sont pas des pages éditoriales : ils sont servis mais pas listés dans le sitemap.
+Sitemap: https://adam-s-tech.github.io/mirage-demo/sitemap.xml

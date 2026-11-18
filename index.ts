@@ -7,11 +7,12 @@ const CONTENT_TYPES: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
+  ".svg": "image/svg+xml",
 };
 
 async function serveStatic(pathname: string): Promise<Response | null> {
   const filePath = pathname === "/" ? "index.html" : pathname.slice(1);
-  // Block path traversal — only serve flat files inside public/.
+  // Block path traversal: only serve flat files inside public/.
   if (filePath.includes("..") || filePath.includes("/") || filePath.includes("\\")) {
     return null;
   }

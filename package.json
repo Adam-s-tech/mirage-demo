@@ -1,12 +1,41 @@
 {
-  "name": "mirage-initial",
+  "name": "mirage-demo-fr",
+  "version": "1.0.0",
+  "description": "Démo française de Mirage WASM : OCR, vision par ordinateur, détection d’objets, segmentation et extraction JSON locale dans le navigateur.",
   "module": "index.ts",
   "type": "module",
   "private": true,
+  "author": "Adama BELEM (Adam AI / Next Gen AI) ; démonstration originale : Joe Maddalone",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Adam-s-tech/mirage-demo.git"
+  },
+  "homepage": "https://adam-s-tech.github.io/mirage-demo/",
+  "bugs": {
+    "url": "https://github.com/Adam-s-tech/mirage-demo/issues"
+  },
+  "keywords": [
+    "mirage",
+    "cactus-compute",
+    "webassembly",
+    "wasm",
+    "ocr",
+    "computer-vision",
+    "object-detection",
+    "image-segmentation",
+    "local-ai",
+    "browser-ai",
+    "document-ai",
+    "french"
+  ],
   "scripts": {
     "start": "bun run index.ts",
     "start:wasm": "bun run wasm-app/serve.ts",
-    "lint": "biome lint"
+    "lint": "biome lint",
+    "check:site": "node scripts/check-site.mjs",
+    "test:e2e": "node tests/e2e-wasm.mjs",
+    "assets": "node tests/make-assets.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.6.6",

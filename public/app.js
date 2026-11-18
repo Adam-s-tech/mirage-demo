@@ -1,3 +1,9 @@
+// Mirage describe : version française de la démonstration serveur.
+// L’interface est identique à la version WebAssembly ; l’inférence est déléguée
+// à la CLI Cactus via POST /api/describe (index.ts). Le JSON renvoyé par Mirage
+// reste la source affichée : l’interface ne le réécrit pas.
+
+const APP_VERSION = "1.0.0";
 
 const drop = document.getElementById("drop");
 const fileInput = document.getElementById("file");
@@ -25,12 +31,58 @@ const scenePills = document.getElementById("scenePills");
 const textWrap = document.getElementById("textWrap");
 const textList = document.getElementById("textList");
 const textCount = document.getElementById("textCount");
+const relWrap = document.getElementById("relWrap");
+const relList = document.getElementById("relList");
+const relCount = document.getElementById("relCount");
 const inspectorEmpty = document.getElementById("inspectorEmpty");
 const confRow = document.getElementById("confRow");
 const confRange = document.getElementById("confRange");
 const confVal = document.getElementById("confVal");
+const copyJsonBtn = document.getElementById("copyJson");
+const downloadJsonBtn = document.getElementById("downloadJson");
+const thumbWrap = document.getElementById("thumbWrap");
+const thumb = document.getElementById("thumb");
+const descWrap = document.getElementById("descWrap");
+const descBody = document.getElementById("descBody");
+const descLang = document.getElementById("descLang");
+
+const OK_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const OK_EXT = /\.(jpe?g|png|webp)$/i;
+
+const SCENE_LABELS = {
+  setting: "cadre",
+  lighting: "éclairage",
+  weather: "météo",
+  time_of_day: "moment de la journée",
+  surface: "surface",
+  style: "style",
+  background: "fond",
+  colors: "couleurs",
+};
+
+const PREDICATES = {
+  in: "dans",
+  inside: "à l’intérieur de",
+  on: "sur",
+  under: "sous",
+  above: "au-dessus de",
+  below: "en dessous de",
+  next_to: "à côté de",
+  near: "près de",
+  left_of: "à gauche de",
+  right_of: "à droite de",
+  behind: "derrière",
+  in_front_of: "devant",
+  holding: "tient",
+  contains: "contient",
+  part_of: "partie de",
+  touching: "touche",
+  attached_to: "attaché à",
+  with: "avec",
+};
+
 let minScore = 0;
-// Items without a numeric score always pass so unscored data stays visible.
+// Les éléments sans score numérique passent toujours : rien n’est masqué à tort.
 function passesScore(item) {
   return !item || typeof item.score !== "number" || item.score >= minScore;
 }
@@ -38,6 +90,7 @@ for (const [headId, wrapId] of [
   ["sceneHead", "sceneWrap"],
   ["objHead", "objListWrap"],
   ["textHead", "textWrap"],
+  ["relHead", "relWrap"],
 ]) {
   const head = document.getElementById(headId);
   const wrap = document.getElementById(wrapId);
@@ -46,16 +99,10 @@ for (const [headId, wrapId] of [
     head.setAttribute("aria-expanded", String(!collapsed));
   });
 }
-const copyJsonBtn = document.getElementById("copyJson");
-const thumbWrap = document.getElementById("thumbWrap");
-const thumb = document.getElementById("thumb");
-const descWrap = document.getElementById("descWrap");
-const descBody = document.getElementById("descBody");
-const descLang = document.getElementById("descLang");
 
 function renderDescription() {
-  // Pipe-separated reasoning string → one paragraph per segment.
-  // A leading "lang: xx" segment becomes the header pill instead of prose.
+  // Chaîne « reasoning » séparée par des barres verticales : un paragraphe par
+  // segment. Un premier segment « lang: xx » devient une pastille d’en-tête.
   const reasoning =
     lastResult && typeof lastResult.reasoning === "string"
       ? lastResult.reasoning
@@ -71,24 +118,39 @@ function renderDescription() {
   const lang = segments[0].match(/^lang:\s*(\w+)$/i);
   const prose = lang ? segments.slice(1) : segments;
   descLang.hidden = !lang;
-  if (lang) descLang.textContent = lang[1];
+  if (lang) {
+    descLang.textContent = /^en$/i.test(lang[1])
+      ? "modèle : anglais"
+      : `langue : ${lang[1]}`;
+    descLang.title = /^en$/i.test(lang[1])
+      ? "L’interprétation est rédigée par le modèle en anglais ; l’interface reste en français."
+      : "";
+  }
   descBody.innerHTML = "";
   prose.forEach((text, i) => {
     const p = document.createElement("p");
-    // Last segment is usually a caveat ("cannot know…") — mute it.
+    // Le dernier segment est souvent une réserve (« cannot know… ») : on l’atténue.
     if (i === prose.length - 1 && /^(cannot|can't|unable|unknown)/i.test(text))
       p.className = "dim";
     p.textContent = text;
     descBody.appendChild(p);
   });
+  if (lang && /^en$/i.test(lang[1])) {
+    const note = document.createElement("p");
+    note.className = "dim";
+    note.textContent = "Texte produit par le modèle en anglais, affiché sans traduction.";
+    descBody.appendChild(note);
+  }
   descWrap.hidden = !prose.length;
 }
 const SCENE_KEYS = ["setting", "lighting", "weather", "time_of_day"];
 
 let file = null;
 let objectUrl = null;
-let loadedImage = null; // HTMLImageElement at natural resolution
-let lastResult = null; // mirage JSON result
+let loadedImage = null; // HTMLImageElement à sa résolution naturelle
+let lastResult = null; // JSON Mirage
+let lastRawJson = ""; // texte exact affiché, utilisé pour la copie
+let lastAnalysis = null; // métadonnées de la dernière analyse
 let hoveredIndex = -1;
 let selectedIndex = -1;
 let hoveredTextIndex = -1;
@@ -123,14 +185,13 @@ function hexToRgba(hex, alpha) {
   return `rgba(${r},${g},${b},${alpha})`;
 }
 
-// Mirage bboxes live in 0–1000 normalized space; canvas is natural image size.
+// Les bbox Mirage sont en 0 à 1000 ; le canevas est à la taille naturelle.
 function toPixels(bbox, w, h) {
   const [x1, y1, x2, y2] = bbox;
   return [(x1 / 1000) * w, (y1 / 1000) * h, (x2 / 1000) * w, (y2 / 1000) * h];
 }
 
-// Pixel-space Path2D for an object: tight mask polygon when available,
-// bbox rect fallback otherwise. Used for spotlight cutout + hit-testing.
+// Chemin pixel d’un objet : polygone du masque si présent, sinon rectangle bbox.
 function objectPath(obj, w, h) {
   if (!obj) return null;
   if (Array.isArray(obj.mask) && obj.mask.length >= 6) {
@@ -157,7 +218,7 @@ function loadImage(url) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error("Could not decode image."));
+    img.onerror = () => reject(new Error("impossible de décoder l’image"));
     img.src = url;
   });
 }
@@ -194,8 +255,6 @@ function renderScene() {
     sceneWrap.hidden = true;
     return;
   }
-  // Known keys first in a stable order, then any extra keys the model
-  // returns (e.g. surface, style) in the order they arrived.
   const ordered = [
     ...SCENE_KEYS.filter((k) => scene[k]),
     ...Object.keys(scene).filter((k) => !SCENE_KEYS.includes(k) && scene[k]),
@@ -205,7 +264,8 @@ function renderScene() {
     pill.className = "scene-pill";
     const key = document.createElement("span");
     key.className = "k";
-    key.textContent = k.replace(/_/g, " ");
+    key.textContent = SCENE_LABELS[k] || k.replace(/_/g, " ");
+    key.title = k;
     const val = document.createElement("span");
     val.className = "v";
     val.textContent =
@@ -238,14 +298,21 @@ function renderObjList() {
     const li = document.createElement("li");
     li.className = "obj-item";
     li.dataset.index = String(i);
+    li.tabIndex = 0;
+    li.setAttribute("role", "button");
     const color = colorFor(i);
-    const score = typeof obj.score === "number" ? obj.score.toFixed(2) : "—";
+    const score = typeof obj.score === "number" ? obj.score.toFixed(2) : "n/d";
     const bits = describeBits(obj);
     li.innerHTML = `<span class="dot"></span><span class="name"></span><span class="meta"></span>`;
     li.querySelector(".dot").style.background = color;
-    li.querySelector(".name").textContent = obj.name || "object";
+    const name = obj.name || "objet";
+    li.querySelector(".name").textContent = name;
     li.querySelector(".meta").textContent = score + (bits ? ` · ${bits}` : "");
-    li.title = bits || obj.name || "object";
+    li.title = bits || name;
+    li.setAttribute(
+      "aria-label",
+      `${name}, confiance ${score}${bits ? `, ${bits}` : ""}. Activer pour mettre en évidence.`,
+    );
     li.addEventListener("mouseenter", () => setHovered(i));
     li.addEventListener("mouseleave", () => setHovered(-1));
     li.addEventListener("click", () => {
@@ -253,12 +320,18 @@ function renderObjList() {
       syncActiveList();
       redraw();
     });
+    li.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter" || ev.key === " ") {
+        ev.preventDefault();
+        li.click();
+      }
+    });
     objList.appendChild(li);
   });
   objCount.textContent =
     shown < objects.length
-      ? `${shown} of ${objects.length} objects`
-      : objects.length + (objects.length === 1 ? " object" : " objects");
+      ? `${shown} sur ${objects.length} objets`
+      : `${objects.length} ${objects.length === 1 ? "objet" : "objets"}`;
   syncActiveList();
 }
 
@@ -280,6 +353,15 @@ async function copyString(s) {
     ta.remove();
     return ok;
   }
+}
+
+function flashButton(btn, text) {
+  const orig = btn.dataset.label || btn.textContent;
+  btn.dataset.label = orig;
+  btn.textContent = text;
+  setTimeout(() => {
+    btn.textContent = orig;
+  }, 1400);
 }
 
 function setHoveredText(i) {
@@ -308,14 +390,16 @@ function renderTextList() {
     const li = document.createElement("li");
     li.className = "obj-item text-item";
     li.dataset.index = String(i);
+    li.tabIndex = 0;
+    li.setAttribute("role", "button");
     li.title =
-      (t.string || "") + (t.string ? " — click to copy" : "Click to copy");
+      (t.string || "") + (t.string ? " · cliquez pour copier" : "Cliquez pour copier");
     li.innerHTML = `<span class="quote">&ldquo;</span><span class="name"></span><span class="quote">&rdquo;</span><span class="meta"></span>`;
-    li.querySelector(".name").textContent = t.string || "(unreadable)";
+    li.querySelector(".name").textContent = t.string || "(illisible)";
     li.querySelector(".meta").textContent =
       typeof t.score === "number"
-        ? `${t.score.toFixed(2)} · click to copy`
-        : "click to copy";
+        ? `${t.score.toFixed(2)} · cliquer pour copier`
+        : "cliquer pour copier";
     li.addEventListener("mouseenter", () => setHoveredText(i));
     li.addEventListener("mouseleave", () => setHoveredText(-1));
     li.addEventListener("click", async () => {
@@ -323,31 +407,64 @@ function renderTextList() {
       const ok = await copyString(t.string);
       const meta = li.querySelector(".meta");
       const orig = meta.textContent;
-      meta.textContent = ok ? "copied ✓" : "copy failed";
+      meta.textContent = ok ? "copié ✓" : "échec de la copie";
       setTimeout(() => {
         meta.textContent = orig;
       }, 1200);
+    });
+    li.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter" || ev.key === " ") {
+        ev.preventDefault();
+        li.click();
+      }
     });
     textList.appendChild(li);
   });
   textCount.textContent =
     shownText < texts.length
-      ? `${shownText} of ${texts.length} strings`
-      : texts.length + (texts.length === 1 ? " string" : " strings");
+      ? `${shownText} sur ${texts.length} textes`
+      : `${texts.length} ${texts.length === 1 ? "texte" : "textes"}`;
   syncInspector();
 }
 
+function renderRelations() {
+  const relations = lastResult?.relations || [];
+  const objects = lastResult?.objects || [];
+  relList.innerHTML = "";
+  if (!relations.length) {
+    relWrap.hidden = true;
+    return;
+  }
+  relWrap.hidden = false;
+  const nameOf = (id) => {
+    const o = objects.find((x) => x && x.id === id);
+    return o?.name ? o.name : `objet ${id}`;
+  };
+  for (const rel of relations) {
+    if (!rel || typeof rel !== "object") continue;
+    const li = document.createElement("li");
+    li.className = "obj-item rel-item";
+    li.innerHTML = `<span class="name"></span><span class="meta"></span>`;
+    const predicate = PREDICATES[rel.predicate] || rel.predicate || "lié à";
+    li.querySelector(".name").textContent =
+      `${nameOf(rel.subject)} ${predicate} ${nameOf(rel.object)}`;
+    li.querySelector(".meta").textContent =
+      `objets ${rel.subject} → ${rel.object} · prédicat « ${rel.predicate} »`;
+    relList.appendChild(li);
+  }
+  relCount.textContent = `${relations.length} ${relations.length === 1 ? "relation" : "relations"}`;
+}
+
 function syncInspector() {
-  // renderTextList always runs last after the other panels update, so one
-  // sync point here covers describe / select / clear.
+  // renderTextList passe en dernier : un seul point de synchronisation suffit.
   inspectorEmpty.style.display =
-    sceneWrap.hidden && objListWrap.hidden && textWrap.hidden ? "" : "none";
+    sceneWrap.hidden && objListWrap.hidden && textWrap.hidden && relWrap.hidden
+      ? ""
+      : "none";
   confRow.hidden = !lastResult;
 }
 
 function pickObjectAt(nx, ny) {
-  // Normalized 0–1000 point → smallest containing bbox wins (beats big
-  // background regions like grass covering smaller objects).
   const objects = lastResult?.objects || [];
   let best = -1;
   let bestArea = Infinity;
@@ -394,12 +511,9 @@ async function redraw() {
   ctx.clearRect(0, 0, w, h);
   ctx.drawImage(loadedImage, 0, 0, w, h);
 
-  // Spotlight: dim everything except the selected object's mask.
-  // Rendered on an offscreen layer so the cutout stays razor-sharp and
-  // the photo underneath is untouched.
+  // Mise en évidence : on assombrit tout sauf le masque de l’objet sélectionné.
   if (lastResult && toggleSpotlight.checked && selectedIndex >= 0) {
     const sel = lastResult.objects[selectedIndex];
-    // A selected object below the confidence threshold gets no cutout.
     const cutout = passesScore(sel) ? objectPath(sel, w, h) : null;
     if (cutout) {
       const dim = document.createElement("canvas");
@@ -411,7 +525,6 @@ async function redraw() {
       dctx.globalCompositeOperation = "destination-out";
       dctx.fill(cutout);
       ctx.drawImage(dim, 0, 0);
-      // Crisp rim around the cutout so the edge reads on any background.
       ctx.save();
       ctx.strokeStyle = colorFor(selectedIndex);
       ctx.lineWidth = Math.max(2, Math.round(w / 200));
@@ -426,14 +539,12 @@ async function redraw() {
   const showLabels = toggleLabels.checked;
   const showText = toggleText.checked;
   if (!showBoxes && !showMasks && !showText && !showLabels) return;
-  // Scale label font with image size so small thumbs stay readable-ish.
   const fontSize = Math.max(12, Math.round(w / 42));
   ctx.font = `600 ${fontSize}px -apple-system, Inter, Segoe UI, sans-serif`;
   ctx.textBaseline = "top";
 
   const objects = lastResult.objects || [];
   const activeIndex = hoveredIndex >= 0 ? hoveredIndex : selectedIndex;
-  // Masks first so box strokes + labels sit on top.
   if (showMasks) {
     objects.forEach((obj, i) => {
       if (!obj || !Array.isArray(obj.mask) || obj.mask.length < 6) return;
@@ -478,7 +589,7 @@ async function redraw() {
     }
 
     if (showLabels || isActive) {
-      const label = `${obj.name || "object"}${typeof obj.score === "number" ? ` ${obj.score.toFixed(2)}` : ""}`;
+      const label = `${obj.name || "objet"}${typeof obj.score === "number" ? ` ${obj.score.toFixed(2)}` : ""}`;
       const pad = 5;
       const textW = ctx.measureText(label).width;
       const boxH = fontSize + pad * 2;
@@ -522,19 +633,31 @@ async function redraw() {
   }
 }
 
+function isSupportedImage(f) {
+  if (OK_TYPES.has(f.type)) return true;
+  return !f.type && OK_EXT.test(f.name);
+}
+
 async function selectFile(f) {
   if (!f) return;
-  if (!f.type.startsWith("image/")) {
-    setStatus("That file is not an image. Pick a JPG/PNG/WebP.", "err");
+  if (!isSupportedImage(f)) {
+    fileInput.value = "";
+    setStatus(
+      "Format non accepté. Choisissez une image JPG, PNG ou WebP.",
+      "err",
+    );
     return;
   }
   file = f;
   lastResult = null;
+  lastRawJson = "";
+  lastAnalysis = null;
   hoveredIndex = -1;
   selectedIndex = -1;
   renderObjList();
   renderScene();
   renderTextList();
+  renderRelations();
   renderDescription();
   if (objectUrl) URL.revokeObjectURL(objectUrl);
   objectUrl = URL.createObjectURL(f);
@@ -544,16 +667,21 @@ async function selectFile(f) {
     loadedImage = await loadImage(objectUrl);
     await redraw();
   } catch (err) {
-    setStatus(`Error: ${err.message}`, "err");
+    setStatus(`Erreur : ${err.message}`, "err");
     return;
   }
   previewEl.classList.add("show");
   fnameEl.textContent = f.name;
-  fsizeEl.textContent = `${(f.size / 1024).toFixed(1)} KB`;
+  fsizeEl.textContent = `${(f.size / 1024).toFixed(1)} Ko`;
   goBtn.disabled = false;
-  setStatus("Ready — hit “Describe image”.", "ok");
+  setStatus("Prêt. Cliquez sur « Analyser l’image ».", "ok");
 }
 
+const browseBtn = document.getElementById("browse");
+browseBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  fileInput.click();
+});
 drop.addEventListener("click", () => fileInput.click());
 fileInput.addEventListener("change", (e) => selectFile(e.target.files[0]));
 ["dragover", "dragenter"].forEach((ev) => {
@@ -584,15 +712,10 @@ confRange.addEventListener("input", () => {
   confVal.textContent = minScore.toFixed(2);
   const objs = lastResult?.objects || [];
   const texts = lastResult?.text || [];
-  // Drop hover/selection that no longer passes so canvas + lists stay in sync.
   if (hoveredIndex >= 0 && !passesScore(objs[hoveredIndex])) hoveredIndex = -1;
   if (selectedIndex >= 0 && !passesScore(objs[selectedIndex]))
     selectedIndex = -1;
-  if (
-    typeof hoveredTextIndex !== "undefined" &&
-    hoveredTextIndex >= 0 &&
-    !passesScore(texts[hoveredTextIndex])
-  )
+  if (hoveredTextIndex >= 0 && !passesScore(texts[hoveredTextIndex]))
     hoveredTextIndex = -1;
   renderObjList();
   renderTextList();
@@ -600,23 +723,98 @@ confRange.addEventListener("input", () => {
 });
 
 copyJsonBtn.addEventListener("click", async () => {
-  const ok = await copyString(outEl.textContent);
-  const orig = copyJsonBtn.textContent;
-  copyJsonBtn.textContent = ok ? "Copied ✓" : "Copy failed";
-  setTimeout(() => {
-    copyJsonBtn.textContent = orig;
-  }, 1200);
+  if (!lastResult || !lastRawJson) {
+    flashButton(copyJsonBtn, "Rien à copier");
+    return;
+  }
+  const ok = await copyString(lastRawJson);
+  flashButton(copyJsonBtn, ok ? "Copié ✓" : "Échec de la copie");
+});
+
+function pad2(n) {
+  return String(n).padStart(2, "0");
+}
+
+function localIso(d) {
+  const off = -d.getTimezoneOffset();
+  const sign = off >= 0 ? "+" : "-";
+  const abs = Math.abs(off);
+  return (
+    `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}` +
+    `T${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}` +
+    `${sign}${pad2(Math.floor(abs / 60))}:${pad2(abs % 60)}`
+  );
+}
+
+function safeFileStem(name) {
+  const base = (name || "image").replace(/\.[^.]+$/, "");
+  const ascii = base
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return ascii || "image";
+}
+
+function buildExportPayload() {
+  return {
+    // Sortie du modèle strictement inchangée.
+    mirage_output: lastResult,
+    analysis_metadata: {
+      file_name: file?.name || null,
+      file_size_bytes: file?.size || null,
+      image_width: loadedImage?.naturalWidth || null,
+      image_height: loadedImage?.naturalHeight || null,
+      input_width: lastAnalysis?.inputW || null,
+      input_height: lastAnalysis?.inputH || null,
+      inference_ms: lastAnalysis?.inferenceMs ?? null,
+      server_ms: lastAnalysis?.serverMs ?? null,
+      engine: "cactus mirage describe (CLI locale)",
+      model: "Cactus-Compute/mirage (mirage.cact)",
+      app_version: APP_VERSION,
+      locale: "fr",
+      exported_at_local: localIso(new Date()),
+    },
+  };
+}
+
+downloadJsonBtn.addEventListener("click", () => {
+  if (!lastResult) {
+    flashButton(downloadJsonBtn, "Rien à télécharger");
+    return;
+  }
+  const payload = buildExportPayload();
+  const now = new Date();
+  const stamp =
+    `${now.getFullYear()}${pad2(now.getMonth() + 1)}${pad2(now.getDate())}` +
+    `-${pad2(now.getHours())}${pad2(now.getMinutes())}${pad2(now.getSeconds())}`;
+  const name = `${safeFileStem(file?.name)}-mirage-${stamp}.json`;
+  const text = `${JSON.stringify(payload, null, 2)}\n`;
+  const blob = new Blob([text], { type: "application/json;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  flashButton(downloadJsonBtn, "Téléchargé ✓");
 });
 
 clearBtn.addEventListener("click", () => {
   file = null;
   fileInput.value = "";
   lastResult = null;
+  lastRawJson = "";
+  lastAnalysis = null;
   hoveredIndex = -1;
   selectedIndex = -1;
   renderObjList();
   renderScene();
   renderTextList();
+  renderRelations();
   renderDescription();
   loadedImage = null;
   if (objectUrl) {
@@ -633,10 +831,10 @@ clearBtn.addEventListener("click", () => {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   canvas.removeAttribute("width");
   outEl.innerHTML =
-    '<span class="empty">// Cleared. Pick another image.</span>';
-  timingEl.textContent = "—";
+    '<span class="empty">// Réinitialisé. Choisissez une autre image.</span>';
+  timingEl.textContent = "…";
   metaEl.textContent = "";
-  setStatus("No image selected.");
+  setStatus("Aucune image sélectionnée.");
 });
 
 goBtn.addEventListener("click", async () => {
@@ -644,7 +842,7 @@ goBtn.addEventListener("click", async () => {
   goBtn.disabled = true;
   const t0 = performance.now();
   setStatus(
-    '<span class="spinner"></span>Running cactus mirage describe…',
+    '<span class="spinner"></span>Analyse en cours avec la CLI Cactus…',
     "loading",
   );
   outEl.textContent = "…";
@@ -660,23 +858,44 @@ goBtn.addEventListener("click", async () => {
       throw new Error(text.slice(0, 500) || `HTTP ${res.status}`);
     }
     if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    const serverMs = typeof data.serverMs === "number" ? data.serverMs : null;
+    const inferenceMs = Math.round(performance.now() - t0);
     lastResult = data.result;
+    lastAnalysis = {
+      inputW: loadedImage?.naturalWidth || null,
+      inputH: loadedImage?.naturalHeight || null,
+      inferenceMs,
+      serverMs,
+    };
     hoveredIndex = -1;
     selectedIndex = -1;
     renderObjList();
     renderScene();
     renderDescription();
     renderTextList();
+    renderRelations();
+    syncInspector();
     await redraw();
-    const dt = ((performance.now() - t0) / 1000).toFixed(2);
-    outEl.textContent = JSON.stringify(data.result, null, 2);
-    timingEl.textContent = `${dt}s`;
+    lastRawJson = JSON.stringify(data.result, null, 2);
+    outEl.textContent = lastRawJson;
+    const dt = (inferenceMs / 1000).toFixed(2);
+    timingEl.textContent = `${dt} s`;
     const n = (data.result.objects || []).length;
-    metaEl.textContent = `${data.filename} → ${n} object(s), server took ${(data.serverMs / 1000).toFixed(2)}s`;
-    setStatus(`Done in ${dt}s — ${n} object(s) boxed on canvas.`, "ok");
+    metaEl.textContent =
+      `${data.filename} → ${n} objet(s)` +
+      (serverMs !== null ? `, serveur ${(serverMs / 1000).toFixed(2)} s` : "") +
+      ` · total ${dt} s`;
+    setStatus(
+      `Analyse terminée en ${dt} s : ${n} objet(s) encadré(s) sur l’image.`,
+      "ok",
+    );
   } catch (err) {
-    setStatus(`Error: ${err.message || err}`, "err");
-    outEl.textContent = `ERROR\n\n${err.message || err}`;
+    const detail = err instanceof Error ? err.message : String(err);
+    setStatus(
+      `Erreur pendant l’analyse : ${detail}. Vérifiez que la CLI Cactus est installée, puis réessayez.`,
+      "err",
+    );
+    outEl.textContent = `ERREUR\n\n${detail}`;
   } finally {
     goBtn.disabled = !file;
   }

@@ -1,5 +1,5 @@
 {
-  "name": "mirage-demo-fr",
+  "name": "ocr-llm-miniature",
   "version": "1.0.0",
   "description": "Démo française de Mirage WASM : OCR, vision par ordinateur, détection d’objets, segmentation et extraction JSON locale dans le navigateur.",
   "module": "index.ts",
@@ -9,11 +9,11 @@
   "license": "UNLICENSED",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Adam-s-tech/mirage-demo.git"
+    "url": "git+https://github.com/Adam-s-tech/ocr-llm-miniature.git"
   },
-  "homepage": "https://adam-s-tech.github.io/mirage-demo/",
+  "homepage": "https://adam-s-tech.github.io/ocr-llm-miniature/",
   "bugs": {
-    "url": "https://github.com/Adam-s-tech/mirage-demo/issues"
+    "url": "https://github.com/Adam-s-tech/ocr-llm-miniature/issues"
   },
   "keywords": [
     "mirage",

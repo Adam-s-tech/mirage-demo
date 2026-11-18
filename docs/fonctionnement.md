@@ -3,7 +3,7 @@
 ## Structure du dépôt
 
 ```
-mirage-demo/
+ocr-llm-miniature/
 ├── index.ts                  serveur local du mode CLI Cactus (port 3000)
 ├── public/                   interface du mode serveur
 ├── wasm-app/                 interface et site publié (mode WebAssembly)

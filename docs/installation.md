@@ -14,8 +14,8 @@ Le mode WebAssembly ne demande ni Python ni la CLI Cactus : un navigateur récen
 ## Installation locale
 
 ```bash
-git clone https://github.com/Adam-s-tech/mirage-demo.git
-cd mirage-demo
+git clone https://github.com/Adam-s-tech/ocr-llm-miniature.git
+cd ocr-llm-miniature
 bun install
 ```
 
@@ -90,7 +90,7 @@ Le workflow installe Bun, lance `bun run lint` et `bun run check:site`, prépare
 
 Après la première publication :
 
-- vérifiez que `https://adam-s-tech.github.io/mirage-demo/` correspond bien à l’URL canonique écrite dans
+- vérifiez que `https://adam-s-tech.github.io/ocr-llm-miniature/` correspond bien à l’URL canonique écrite dans
   `wasm-app/index.html`, `wasm-app/documentation.html`, `robots.txt` et `sitemap.xml` ;
 - si le nom du dépôt ou le propriétaire change, remplacez cette URL partout avant publication.
 

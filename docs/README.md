@@ -1,4 +1,4 @@
-# Documentation de Mirage Demo français
+# Documentation de la démo OCR et vision
 
 Cette documentation accompagne la démonstration française du modèle de vision Mirage, exécuté en WebAssembly dans le
 navigateur. Elle s’adresse à trois publics :

@@ -1,10 +1,10 @@
-# Mirage Demo français : OCR, vision et extraction JSON en local avec WebAssembly
+# OCR et vision avec un LLM miniature
 
 Un modèle de vision léger qui analyse une image directement dans votre navigateur, sans envoyer les pixels à un serveur.
 
-![Interface française de Mirage WASM après analyse d’une photo de deux cafés](docs/images/interface-francaise.png)
+![Interface française de la démo OCR et vision après analyse d’une photo de deux cafés](docs/images/interface-francaise.png)
 
-Mirage WASM réunit dans une seule sortie structurée la description de scène, la détection d’objets, les masques de
+Cette démo réunit dans une seule sortie structurée la description de scène, la détection d’objets, les masques de
 segmentation, les textes détectés, les relations spatiales et une interprétation synthétique. L’interface est en
 français, la documentation et les tests aussi.
 
@@ -19,7 +19,7 @@ français, la documentation et les tests aussi.
 ## Démonstration en ligne
 
 La démonstration est préparée pour GitHub Pages mais **n’est pas encore publiée**. L’URL prévisionnelle est
-`https://adam-s-tech.github.io/mirage-demo/` (à confirmer après activation de Pages). La procédure d’activation est
+`https://adam-s-tech.github.io/ocr-llm-miniature/` (à confirmer après activation de Pages). La procédure d’activation est
 décrite dans [docs/installation.md](docs/installation.md#publication-github-pages).
 
 ## Fonctionnalités
@@ -55,8 +55,8 @@ Prérequis :
 - la CLI Cactus (`pip install -U cactus-compute`) uniquement pour le mode serveur.
 
 ```bash
-git clone https://github.com/Adam-s-tech/mirage-demo.git
-cd mirage-demo
+git clone https://github.com/Adam-s-tech/ocr-llm-miniature.git
+cd ocr-llm-miniature
 bun install
 ```
 
@@ -147,7 +147,7 @@ Détail : [docs/cas-usage.md](docs/cas-usage.md).
 - l’interprétation textuelle est produite en anglais par le modèle ;
 - scores variables, petits textes fragiles, ordre de lecture non garanti ;
 - pas de reconnaissance comptable certifiée, pas d’extraction de montants validée ;
-- Mirage ne remplace pas un OCR spécialisé pour un usage contractuel.
+- Cette démo ne remplace pas un OCR spécialisé pour un usage contractuel.
 
 Détail : [docs/limites.md](docs/limites.md).
 

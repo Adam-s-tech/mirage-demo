@@ -2,7 +2,7 @@
 
 ## Contexte
 
-Le dépôt `Adam-s-tech/mirage-demo` est un fork public de la démonstration `joemaddalone/mirage-demo`. L’application
+Le dépôt `Adam-s-tech/ocr-llm-miniature` est un fork public de la démonstration `joemaddalone/mirage-demo`. L’application
 utilise le modèle de vision Mirage de Cactus Compute selon deux modes : une version serveur fondée sur la CLI Cactus,
 et une version WebAssembly exécutée dans le navigateur.
 

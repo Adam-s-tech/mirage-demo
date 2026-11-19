@@ -2,6 +2,9 @@
 
 Date : 17 novembre 2026.
 
+> Note de consolidation : les mesures de ce rapport ont été réalisées le 17 novembre 2026, avant le renommage du dépôt
+> en `ocr-llm-miniature` le 18 novembre 2026. Les noms de fichiers, les commandes et les résultats restent valables.
+
 ## Environnement
 
 | Élément | Valeur |

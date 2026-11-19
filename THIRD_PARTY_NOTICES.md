@@ -35,8 +35,8 @@ Ces outils ne sont pas redistribués dans le dépôt ; ils sont installés par `
 | Contenu | Licence |
 |---|---|
 | Code de la démonstration d’origine | aucune licence déclarée |
-| Version française et documentation | aucune licence déclarée, voir NOTICE.md |
-| Images de `exemples/images/` | aucune licence déclarée, fournies par le propriétaire du dépôt |
+| Code de la version française, documentation et tests, réalisés par Adama BELEM | aucune licence déclarée, voir NOTICE.md |
+| Images de `exemples/images/`, réalisées par Adama BELEM | droits de l’auteur confirmés le 20 novembre 2026, aucune licence ouverte déclarée |
 
 ## Absence de services externes
 

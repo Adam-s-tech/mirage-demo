@@ -6,8 +6,8 @@ Ce dépôt est un fork de [`joemaddalone/mirage-demo`](https://github.com/joemad
 
 - **Démonstration originale** : Joe Maddalone.
 - **Moteur Cactus et modèle Mirage** : Cactus Compute.
-- **Version française, documentation, tests, cas d’usage et adaptations de l’interface** : Adama BELEM, Adam AI /
-  Next Gen AI.
+- **Code de la version française, documentation, tests, cas d’usage et adaptations de l’interface** : Adama BELEM,
+  Adam AI / Next Gen AI.
 
 L’interface reprend la structure de la démonstration d’origine. Les textes visibles ont été traduits en français, sans
 modifier la logique d’inférence. Les crédits d’origine restent affichés dans l’interface et dans le README.
@@ -55,9 +55,9 @@ apporté au fichier, et `cactus.wasm` n’est pas modifié.
 
 ## Images de démonstration
 
-Les trois images de `exemples/images/` ont été fournies par Adama BELEM. Elles ne contiennent aucune donnée personnelle
-ni information confidentielle. Leur provenance exacte et leurs droits de diffusion doivent être confirmés par le
-propriétaire avant réutilisation hors de ce dépôt. Aucune licence ouverte n’est déclarée sur ces images.
+Les trois images de `exemples/images/` ont été réalisées par Adama BELEM, qui en détient les droits et autorise leur
+diffusion dans ce dépôt. Elles ne contiennent aucune donnée personnelle ni information confidentielle. Aucune licence
+ouverte n’est déclarée sur ces images : les droits restent ceux de leur auteur.
 
 ## Composants tiers
 

@@ -96,11 +96,13 @@ Après la première publication :
 
 ### Configuration du dépôt
 
-La description et les topics se règlent dans **Settings** (ou par l’API). Valeurs prévues :
+La description et les topics se règlent dans **Settings** (ou par l’API). Valeurs actuelles au 20 novembre 2026 :
 
-- description : `OCR et vision avec un LLM miniature : analyse d’image locale dans le navigateur avec le moteur Mirage, détection d’objets, segmentation et export JSON.` ;
-- topics : `ocr`, `vision`, `llm`, `mirage`, `cactus-compute`, `webassembly`, `wasm`, `computer-vision`, `object-detection`,
-  `image-segmentation`, `local-ai`, `browser-ai`, `document-ai`, `french`.
+- description : `OCR et vision avec un LLM miniature, exécutés localement dans le navigateur.` ;
+- topics : `browser-ai`, `cactus-compute`, `computer-vision`, `document-ai`, `french`, `image-segmentation`,
+  `local-ai`, `mirage`, `object-detection`, `ocr`, `wasm`, `webassembly`.
+
+Le code de la démonstration et les images de test ont été réalisés par Adama BELEM, qui en détient les droits.
 
 ### Social preview
 

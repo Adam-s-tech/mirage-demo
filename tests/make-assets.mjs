@@ -70,12 +70,12 @@ const cardPage = `<!DOCTYPE html>
   .frame img{display:block;width:100%;height:100%;object-fit:contain;background:#05070c}
 </style></head><body>
   <div class="left">
-    <div class="brand">Mirage <span>wasm</span></div>
-    <div class="badge">Version française</div>
-    <h1>OCR et vision locale<br>dans le navigateur</h1>
-    <p>Détection d’objets, segmentation, textes et export JSON. L’image reste dans le navigateur.</p>
+    <div class="brand">OCR <span>vision</span></div>
+    <div class="badge">LLM miniature</div>
+    <h1>Analyse locale<br>dans le navigateur</h1>
+    <p>OCR, détection d’objets, segmentation, textes et export JSON. L’image reste dans le navigateur.</p>
     <ul><li>OCR local</li><li>Détection d’objets</li><li>Segmentation</li><li>Export JSON</li></ul>
-    <div class="credit">Mirage et Cactus : Cactus Compute · adaptation française : Adam AI / Next Gen AI</div>
+    <div class="credit">Moteur Mirage et Cactus : Cactus Compute · adaptation : Adam AI / Next Gen AI</div>
   </div>
   <div class="right"><div class="frame"><img src="file:///${shotPath.replace(/\\/g, "/")}"></div></div>
 </body></html>`;

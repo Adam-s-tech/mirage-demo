@@ -98,8 +98,8 @@ Après la première publication :
 
 La description et les topics se règlent dans **Settings** (ou par l’API). Valeurs prévues :
 
-- description : `Démo française de Mirage WASM : OCR, vision par ordinateur, détection d’objets, segmentation et extraction JSON locale dans le navigateur.` ;
-- topics : `mirage`, `cactus-compute`, `webassembly`, `wasm`, `ocr`, `computer-vision`, `object-detection`,
+- description : `OCR et vision avec un LLM miniature : analyse d’image locale dans le navigateur avec le moteur Mirage, détection d’objets, segmentation et export JSON.` ;
+- topics : `ocr`, `vision`, `llm`, `mirage`, `cactus-compute`, `webassembly`, `wasm`, `computer-vision`, `object-detection`,
   `image-segmentation`, `local-ai`, `browser-ai`, `document-ai`, `french`.
 
 ### Social preview

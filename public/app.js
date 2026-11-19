@@ -3,7 +3,7 @@
 // à la CLI Cactus via POST /api/describe (index.ts). Le JSON renvoyé par Mirage
 // reste la source affichée : l’interface ne le réécrit pas.
 
-const APP_VERSION = "1.0.0";
+const APP_VERSION = "1.0.1";
 
 const drop = document.getElementById("drop");
 const fileInput = document.getElementById("file");

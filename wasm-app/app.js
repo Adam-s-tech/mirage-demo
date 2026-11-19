@@ -1,10 +1,10 @@
-// Mirage wasm : version française de la démonstration.
+// OCR et vision : version française de la démonstration.
 // Même interface que la version serveur, mais l’inférence tourne dans cet onglet.
 // Le moteur Cactus (cactus.js + cactus.wasm) et les poids mirage.cact sont
 // récupérés une fois, puis chaque analyse est un appel WebAssembly direct sur
 // les pixels déjà présents dans un canevas. Aucune image n’est envoyée.
 
-const APP_VERSION = "1.0.0";
+const APP_VERSION = "1.0.1";
 const HF_MODEL_URL =
   "https://huggingface.co/Cactus-Compute/mirage/resolve/main/mirage.cact";
 

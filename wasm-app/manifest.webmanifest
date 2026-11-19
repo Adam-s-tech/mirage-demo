@@ -1,7 +1,7 @@
 {
-  "name": "Mirage WASM français",
-  "short_name": "Mirage WASM",
-  "description": "OCR, détection d’objets, segmentation et export JSON dans le navigateur, en local.",
+  "name": "OCR et vision avec un LLM miniature",
+  "short_name": "OCR et vision",
+  "description": "OCR, détection d’objets, segmentation et export JSON avec un LLM de vision miniature, en local dans le navigateur.",
   "lang": "fr",
   "start_url": "./",
   "scope": "./",

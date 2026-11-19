@@ -1,6 +1,6 @@
 # Composants tiers
 
-Ce fichier recense les composants utilisés par la démonstration et leur licence, vérifiée le 17 novembre 2026.
+Ce fichier recense les composants utilisés par la démonstration et leur licence, vérifiée le 20 novembre 2026.
 
 ## Composants d’exécution
 
@@ -13,6 +13,10 @@ Ce fichier recense les composants utilisés par la démonstration et leur licenc
 
 Le fichier `cactus.js` a reçu un correctif d’une ponctuation, documenté dans [NOTICE.md](NOTICE.md). Le binaire
 `cactus.wasm` et les poids ne sont pas modifiés.
+
+La licence Apache 2.0 du modèle et du runtime est confirmée par la documentation Cactus et le dépôt runtime :
+<https://github.com/cactus-compute/cactus> et <https://huggingface.co/Cactus-Compute/mirage>. Elle ne couvre pas le
+code de démonstration, qui reste sans licence.
 
 ## Outils de développement
 

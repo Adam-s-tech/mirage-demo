@@ -100,7 +100,7 @@ La description et les topics se règlent dans **Settings** (ou par l’API). Val
 
 - description : `OCR et vision avec un LLM miniature, exécutés localement dans le navigateur.` ;
 - topics : `browser-ai`, `cactus-compute`, `computer-vision`, `document-ai`, `french`, `image-segmentation`,
-  `local-ai`, `mirage`, `object-detection`, `ocr`, `wasm`, `webassembly`.
+  `llm`, `local-ai`, `mirage`, `object-detection`, `ocr`, `vision`, `wasm`, `webassembly`.
 
 Le code de la démonstration et les images de test ont été réalisés par Adama BELEM, qui en détient les droits.
 

@@ -19,7 +19,8 @@ Consolidation après le renommage du dépôt en `ocr-llm-miniature`.
 - `NOTICE.md` et `THIRD_PARTY_NOTICES.md` : licence Apache 2.0 du modèle et du runtime Cactus confirmée par la
   documentation Cactus et le dépôt runtime, avec les liens ; le code de démonstration reste sans licence ;
 - paternité du code de la version française et droits des images de test confirmés par Adama BELEM, consignés dans les
-  notices ; description et topics réels du dépôt documentés dans `docs/installation.md` ;
+  notices ; description et topics réels du dépôt documentés dans `docs/installation.md`, avec ajout des topics `vision`
+  et `llm` ;
 - note en tête de `docs/tests/rapport-execution-2026-11-17.md` : les mesures datent du 17 novembre 2026, avant le
   renommage.
 

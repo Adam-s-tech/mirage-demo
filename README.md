@@ -18,9 +18,10 @@ français, la documentation et les tests aussi.
 
 ## Démonstration en ligne
 
-La démonstration est préparée pour GitHub Pages mais **n’est pas encore publiée**. L’URL prévisionnelle est
-`https://adam-s-tech.github.io/ocr-llm-miniature/` (à confirmer après activation de Pages). La procédure d’activation est
-décrite dans [docs/installation.md](docs/installation.md#publication-github-pages).
+La démonstration est **publiée** sur le hub AdamAI Lab : `https://lab.adamai.fr/demos/ocr-llm-miniature/`.
+Le dépôt GitHub Pages de ce dépôt ne publie pas l’application : il ne sert qu’à rediriger l’ancienne adresse
+`https://adam-s-tech.github.io/ocr-llm-miniature/` vers le lab. La procédure est décrite dans
+[docs/installation.md](docs/installation.md#publication-github-pages).
 
 ## Fonctionnalités
 

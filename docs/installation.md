@@ -74,25 +74,27 @@ un rapport à côté du JSON demandé (`*.report.json`).
 
 ## Publication GitHub Pages
 
-Le dépôt contient un workflow `.github/workflows/pages.yml`. Il est volontairement **manuel** : aucun déploiement ne
-part tant que vous ne le déclenchez pas.
+L’application est publiée par le hub `adamai-lab` à l’adresse `https://lab.adamai.fr/demos/ocr-llm-miniature/`.
+Le dépôt de démonstration ne publie **pas** l’application par GitHub Pages.
 
-Procédure d’activation :
+Le workflow `.github/workflows/pages.yml` publie uniquement le dossier `redirect/`, qui redirige l’ancienne adresse
+`https://adam-s-tech.github.io/ocr-llm-miniature/` vers le lab. Il est volontairement **manuel** : aucun déploiement
+ne part tant que vous ne le déclenchez pas.
 
-1. pousser la branche puis fusionner la pull request dans `main` ;
+Procédure d’activation, à la charge d’Adama :
+
+1. fusionner la pull request dans `main` ;
 2. ouvrir **Settings > Pages** ;
 3. choisir **Source : GitHub Actions** ;
-4. ouvrir l’onglet **Actions**, sélectionner « Déploiement GitHub Pages », puis **Run workflow** sur `main` ;
-5. attendre la fin du job et vérifier l’URL affichée.
+4. ouvrir l’onglet **Actions**, sélectionner « Redirection vers le lab », puis **Run workflow** sur `main` ;
+5. attendre la fin du job et vérifier que l’ancienne adresse renvoie vers le lab.
 
-Le workflow installe Bun, lance `bun run lint` et `bun run check:site`, prépare `_site/` en copiant `wasm-app/` et
-`exemples/images/`, puis publie l’artefact. Aucun secret n’est nécessaire.
+Le workflow ne publie que `redirect/index.html`. Il n’installe aucune dépendance et ne demande aucun secret.
 
-Après la première publication :
+Après la publication :
 
-- vérifiez que `https://adam-s-tech.github.io/ocr-llm-miniature/` correspond bien à l’URL canonique écrite dans
-  `wasm-app/index.html`, `wasm-app/documentation.html`, `robots.txt` et `sitemap.xml` ;
-- si le nom du dépôt ou le propriétaire change, remplacez cette URL partout avant publication.
+- vérifiez que `redirect/index.html` porte bien l’URL canonique `https://lab.adamai.fr/demos/ocr-llm-miniature/` ;
+- si le nom du dépôt ou le propriétaire change, remplacez cette URL dans `redirect/index.html`.
 
 ### Configuration du dépôt
 

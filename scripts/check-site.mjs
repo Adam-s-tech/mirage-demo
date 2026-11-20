@@ -1,6 +1,6 @@
-// Vérifie les fichiers et métadonnées de la version publiée sur GitHub Pages.
+// Vérifie les fichiers et métadonnées de la version publiée sur le hub lab.adamai.fr.
 // Aucune dépendance. Utilisation : bun run check:site
-// L'URL de référence est lue dans le canonical de wasm-app/index.html.
+// L'URL de référence par défaut est celle du lab.
 // La variable d'environnement SITE_URL permet de forcer l'URL attendue en CI.
 import fs from "node:fs";
 import path from "node:path";
@@ -73,8 +73,9 @@ const pkg = JSON.parse(read(path.join(root, "package.json")));
 const indexCanonical = canonicalHref(index);
 check(Boolean(indexCanonical), "index.html : URL canonique absente");
 
+const DEFAULT_BASE = "https://lab.adamai.fr/demos/ocr-llm-miniature/";
 const forced = process.env.SITE_URL ? withSlash(process.env.SITE_URL) : null;
-const base = forced || (indexCanonical ? withSlash(indexCanonical) : null);
+const base = forced || DEFAULT_BASE;
 
 if (forced && indexCanonical && withSlash(indexCanonical) !== forced) {
   errors.push(

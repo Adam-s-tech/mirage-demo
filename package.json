@@ -1,7 +1,7 @@
 {
   "name": "ocr-llm-miniature",
-  "version": "1.0.0",
-  "description": "Démo française de Mirage WASM : OCR, vision par ordinateur, détection d’objets, segmentation et extraction JSON locale dans le navigateur.",
+  "version": "1.0.1",
+  "description": "OCR et vision avec un LLM miniature : analyse d’image locale dans le navigateur avec le moteur Mirage, détection d’objets, segmentation et export JSON.",
   "module": "index.ts",
   "type": "module",
   "private": true,
@@ -21,6 +21,8 @@
     "webassembly",
     "wasm",
     "ocr",
+    "vision",
+    "llm",
     "computer-vision",
     "object-detection",
     "image-segmentation",

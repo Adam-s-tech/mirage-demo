@@ -1,5 +1,7 @@
 // Vérifie les fichiers et métadonnées de la version publiée sur GitHub Pages.
 // Aucune dépendance. Utilisation : bun run check:site
+// L'URL de référence est lue dans le canonical de wasm-app/index.html.
+// La variable d'environnement SITE_URL permet de forcer l'URL attendue en CI.
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -20,6 +22,24 @@ function exists(p) {
 
 function check(condition, message) {
   if (!condition) errors.push(message);
+}
+
+function withSlash(url) {
+  const clean = url.trim().replace(/\/+$/, "");
+  return `${clean}/`;
+}
+
+function canonicalHref(html) {
+  const m = html.match(/<link rel="canonical" href="([^"]+)"/);
+  return m ? m[1] : null;
+}
+
+function metaContent(html, attribute, value) {
+  const re = new RegExp(
+    `<meta ${attribute}="${value}"[^>]*content="([^"]+)"`,
+  );
+  const m = html.match(re);
+  return m ? m[1] : null;
 }
 
 const required = [
@@ -48,8 +68,23 @@ const doc = read(path.join(site, "documentation.html"));
 const robots = read(path.join(site, "robots.txt"));
 const sitemap = read(path.join(site, "sitemap.xml"));
 const manifest = JSON.parse(read(path.join(site, "manifest.webmanifest")));
+const pkg = JSON.parse(read(path.join(root, "package.json")));
 
-const canonical = "https://adam-s-tech.github.io/mirage-demo/";
+const indexCanonical = canonicalHref(index);
+check(Boolean(indexCanonical), "index.html : URL canonique absente");
+
+const forced = process.env.SITE_URL ? withSlash(process.env.SITE_URL) : null;
+const base = forced || (indexCanonical ? withSlash(indexCanonical) : null);
+
+if (forced && indexCanonical && withSlash(indexCanonical) !== forced) {
+  errors.push(
+    `index.html : URL canonique ${indexCanonical} différente de SITE_URL ${forced}`,
+  );
+}
+const docUrl = base ? `${base}documentation.html` : null;
+const imageUrl = base ? `${base}og-image.png` : null;
+
+if (base) info.push(`URL de référence : ${base}`);
 
 for (const [name, html] of [
   ["index.html", index],
@@ -63,6 +98,7 @@ for (const [name, html] of [
   );
   check(/rel="canonical"/.test(html), `${name} : URL canonique absente`);
   check(/property="og:title"/.test(html), `${name} : Open Graph title absent`);
+  check(/property="og:url"/.test(html), `${name} : Open Graph url absente`);
   check(/property="og:image"/.test(html), `${name} : Open Graph image absente`);
   check(/name="twitter:card"/.test(html), `${name} : Twitter Card absente`);
   check(/rel="manifest"/.test(html), `${name} : manifeste non lié`);
@@ -73,16 +109,49 @@ for (const [name, html] of [
   check(!/[\u2014\u2013]/.test(html), `${name} : tiret cadratin ou demi-cadratin présent`);
 }
 
-check(
-  index.includes(`<link rel="canonical" href="${canonical}"`),
-  "index.html : URL canonique différente de l’URL prévisionnelle",
-);
-check(
-  doc.includes(
-    '<link rel="canonical" href="https://adam-s-tech.github.io/mirage-demo/documentation.html"',
-  ),
-  "documentation.html : URL canonique incorrecte",
-);
+if (base) {
+  check(
+    canonicalHref(index) === base,
+    `index.html : URL canonique différente de l'URL de référence ${base}`,
+  );
+  check(
+    canonicalHref(doc) === docUrl,
+    `documentation.html : URL canonique différente de ${docUrl}`,
+  );
+  check(
+    metaContent(index, "property", "og:url") === base,
+    `index.html : og:url différente de ${base}`,
+  );
+  check(
+    metaContent(doc, "property", "og:url") === docUrl,
+    `documentation.html : og:url différente de ${docUrl}`,
+  );
+  check(
+    metaContent(index, "property", "og:image") === imageUrl,
+    `index.html : og:image différente de ${imageUrl}`,
+  );
+  check(
+    metaContent(doc, "property", "og:image") === imageUrl,
+    `documentation.html : og:image différente de ${imageUrl}`,
+  );
+  check(
+    metaContent(index, "name", "twitter:image") === imageUrl,
+    `index.html : twitter:image différente de ${imageUrl}`,
+  );
+  check(
+    metaContent(doc, "name", "twitter:image") === imageUrl,
+    `documentation.html : twitter:image différente de ${imageUrl}`,
+  );
+  check(
+    robots.includes(`Sitemap: ${base}sitemap.xml`),
+    `robots.txt : référence de sitemap différente de ${base}sitemap.xml`,
+  );
+  check(
+    pkg.homepage === base,
+    `package.json : homepage ${pkg.homepage} différente de ${base}`,
+  );
+}
+
 check(
   index.includes('"@type": "SoftwareApplication"'),
   "index.html : données structurées SoftwareApplication absentes",
@@ -131,25 +200,19 @@ for (const [page, html] of [
   }
 }
 
-check(
-  /Sitemap: https:\/\/adam-s-tech\.github\.io\/mirage-demo\/sitemap\.xml/.test(robots),
-  "robots.txt : référence de sitemap absente",
-);
-
-const locs = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
-check(locs.length === 2, "sitemap.xml : deux URL publiques attendues");
-check(
-  locs.includes(canonical),
-  "sitemap.xml : URL d’accueil absente",
-);
-check(
-  locs.includes(`${canonical}documentation.html`),
-  "sitemap.xml : URL de documentation absente",
-);
-check(
-  !/\.(json|wasm|cact|js|css)</.test(sitemap),
-  "sitemap.xml : ne doit pas lister de ressource technique",
-);
+if (base) {
+  const locs = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
+  check(locs.length === 2, "sitemap.xml : deux URL publiques attendues");
+  check(locs.includes(base), `sitemap.xml : URL d’accueil ${base} absente`);
+  check(
+    locs.includes(docUrl),
+    `sitemap.xml : URL de documentation ${docUrl} absente`,
+  );
+  check(
+    !/\.(json|wasm|cact|js|css)</.test(sitemap),
+    "sitemap.xml : ne doit pas lister de ressource technique",
+  );
+}
 
 check(manifest.lang === "fr", "manifeste : langue non définie sur fr");
 check(

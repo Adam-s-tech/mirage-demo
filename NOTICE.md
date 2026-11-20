@@ -6,8 +6,8 @@ Ce dépôt est un fork de [`joemaddalone/mirage-demo`](https://github.com/joemad
 
 - **Démonstration originale** : Joe Maddalone.
 - **Moteur Cactus et modèle Mirage** : Cactus Compute.
-- **Version française, documentation, tests, cas d’usage et adaptations de l’interface** : Adama BELEM, Adam AI /
-  Next Gen AI.
+- **Code de la version française, documentation, tests, cas d’usage et adaptations de l’interface** : Adama BELEM,
+  Adam AI / Next Gen AI.
 
 L’interface reprend la structure de la démonstration d’origine. Les textes visibles ont été traduits en français, sans
 modifier la logique d’inférence. Les crédits d’origine restent affichés dans l’interface et dans le README.
@@ -18,11 +18,15 @@ modifier la logique d’inférence. Les crédits d’origine restent affichés d
 |---|---|---|
 | Code de la démonstration d’origine | **Aucune licence déclarée** | API GitHub, `license` vide sur `joemaddalone/mirage-demo` |
 | Ce fork | **Aucune licence ajoutée** | décision explicite, voir ci-dessous |
-| Modèle Mirage (`Cactus-Compute/mirage`) | Apache 2.0 | carte du modèle Hugging Face, `license: apache-2.0` |
-| Runtime Cactus (`cactus-compute/cactus`) | Apache 2.0 | API GitHub, `license: Apache-2.0` |
+| Modèle Mirage (`Cactus-Compute/mirage`) | Apache 2.0 | Apache 2.0 confirmé par la documentation Cactus et le dépôt runtime |
+| Runtime Cactus (`cactus-compute/cactus`) | Apache 2.0 | Apache 2.0 confirmé par la documentation Cactus et le dépôt runtime |
 | `wasm-app/vendor/cactus.js` et `cactus.wasm` | Apache 2.0 (artefacts du runtime) | fichiers fournis par la démonstration d’origine |
 
-Vérifications effectuées le 17 novembre 2026.
+La licence Apache 2.0 du modèle et du runtime est confirmée par la documentation Cactus et le dépôt runtime :
+<https://github.com/cactus-compute/cactus> et <https://huggingface.co/Cactus-Compute/mirage>. Elle couvre le modèle et
+le runtime Cactus, jamais le code de démonstration, qui reste sans licence.
+
+Vérifications effectuées le 20 novembre 2026.
 
 ### Pourquoi aucune licence n’est ajoutée au dépôt
 
@@ -51,9 +55,9 @@ apporté au fichier, et `cactus.wasm` n’est pas modifié.
 
 ## Images de démonstration
 
-Les trois images de `exemples/images/` ont été fournies par Adama BELEM. Elles ne contiennent aucune donnée personnelle
-ni information confidentielle. Leur provenance exacte et leurs droits de diffusion doivent être confirmés par le
-propriétaire avant réutilisation hors de ce dépôt. Aucune licence ouverte n’est déclarée sur ces images.
+Les trois images de `exemples/images/` ont été réalisées par Adama BELEM, qui en détient les droits et autorise leur
+diffusion dans ce dépôt. Elles ne contiennent aucune donnée personnelle ni information confidentielle. Aucune licence
+ouverte n’est déclarée sur ces images : les droits restent ceux de leur auteur.
 
 ## Composants tiers
 

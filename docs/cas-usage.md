@@ -1,8 +1,8 @@
 # Cas d’usage
 
-Mirage WASM n’est pas un OCR comptable certifié. C’est un modèle de vision léger qui produit une lecture structurée
-d’une image, utile pour comprendre, démontrer, trier ou préparer un traitement. Les cas ci-dessous précisent ce que
-l’outil apporte réellement et les précautions à prendre.
+Cette démonstration d’OCR et de vision n’est pas un OCR comptable certifié. C’est un modèle de vision léger qui produit
+une lecture structurée d’une image, utile pour comprendre, démontrer, trier ou préparer un traitement. Les cas ci-dessous
+précisent ce que l’outil apporte réellement et les précautions à prendre.
 
 ## 1. Formation et démonstration d’IA locale
 

@@ -1,5 +1,29 @@
 # Journal des modifications
 
+## 1.0.1 - 2026-11-20
+
+Consolidation après le renommage du dépôt en `ocr-llm-miniature`.
+
+### Modifié
+
+- nom du produit « OCR et vision avec un LLM miniature » dans le titre, le H1, les métadonnées Open Graph et Twitter,
+  les données structurées, le manifeste, l’image sociale, `package.json` et les pages de documentation ; le moteur
+  « Mirage » reste cité dans le corps, les crédits et les mots-clés ;
+- URL de référence unique `https://adam-s-tech.github.io/ocr-llm-miniature/` dans `sitemap.xml`, `robots.txt` et les
+  métadonnées des deux pages ;
+- `scripts/check-site.mjs` lit désormais l’URL canonique de `index.html` au lieu de la coder en dur, compare le même
+  origin dans `documentation.html`, les images sociales, `robots.txt`, `sitemap.xml` et `package.json.homepage`, et
+  accepte la variable d’environnement `SITE_URL` pour forcer l’URL attendue ;
+- workflow `check.yml` déclenché aussi sur `push` vers `main` ;
+- workflow `pages.yml` : ajout de `actions/configure-pages@v5` avant la publication de l’artefact ;
+- `NOTICE.md` et `THIRD_PARTY_NOTICES.md` : licence Apache 2.0 du modèle et du runtime Cactus confirmée par la
+  documentation Cactus et le dépôt runtime, avec les liens ; le code de démonstration reste sans licence ;
+- paternité du code de la version française et droits des images de test confirmés par Adama BELEM, consignés dans les
+  notices ; description et topics réels du dépôt documentés dans `docs/installation.md`, avec ajout des topics `vision`
+  et `llm` ;
+- note en tête de `docs/tests/rapport-execution-2026-11-17.md` : les mesures datent du 17 novembre 2026, avant le
+  renommage.
+
 ## 1.0.0 - 2026-11-17
 
 Première version française documentée.

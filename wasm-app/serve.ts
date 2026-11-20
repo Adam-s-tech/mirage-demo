@@ -111,4 +111,4 @@ Bun.serve({
   },
 });
 
-console.log(`Mirage wasm UI -> http://localhost:${PORT}`);
+console.log(`OCR et vision UI -> http://localhost:${PORT}`);
